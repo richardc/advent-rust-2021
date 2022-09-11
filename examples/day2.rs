@@ -57,9 +57,49 @@ fn test_position() {
     );
 }
 
+fn position_aimed(commands: Vec<String>) -> i32 {
+    let mut horizontal = 0;
+    let mut depth = 0;
+    let mut aim = 0;
+
+    for command in commands {
+        match Command::from(command) {
+            Command::Forward(x) => {
+                horizontal += x;
+                depth += aim * x;
+            }
+            Command::Up(d) => aim -= d,
+            Command::Down(d) => aim += d,
+            Command::Err => {}
+        }
+    }
+
+    horizontal * depth
+}
+
+#[test]
+fn test_position_aimed() {
+    assert_eq!(
+        position_aimed(
+            vec![
+                "forward 5",
+                "down 5",
+                "forward 8",
+                "up 3",
+                "down 8",
+                "forward 2"
+            ]
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
+        ),
+        900
+    );
+}
+
 use std::io;
 
 fn main() {
     let directions: Vec<_> = io::stdin().lines().map(|s| s.unwrap()).collect();
-    println!("{}", position(directions));
+    println!("{}", position_aimed(directions));
 }
