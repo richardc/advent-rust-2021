@@ -42,9 +42,113 @@ fn test_battery() {
     );
 }
 
+fn bitcount(lines: &Vec<String>, column: usize) -> i32 {
+    lines
+        .iter()
+        .map(|s| match s.chars().nth(column) {
+            Some(c) if c == '1' => 1,
+            _ => 0,
+        })
+        .sum()
+}
+
+fn oxygen(lines: Vec<String>) -> i32 {
+    let bits = lines.first().unwrap().len();
+
+    let mut set = lines;
+    for position in 0..=bits {
+        let ones = bitcount(&set, position);
+        let zeroes = set.len() as i32 - ones;
+        let keep = if ones >= zeroes { '1' } else { '0' };
+
+        set = set
+            .iter()
+            .filter(|l| l.chars().nth(position) == Some(keep))
+            .map(|s| s.to_string())
+            .collect();
+
+        if set.len() == 1 {
+            return i32::from_str_radix(set.first().unwrap(), 2).unwrap();
+        }
+    }
+    0
+}
+
+#[test]
+fn test_oxygen() {
+    assert_eq!(
+        oxygen(
+            vec![
+                "00100", "11110", "10110", "10111", "10101", "01111", "00111", "11100", "10000",
+                "11001", "00010", "01010",
+            ]
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
+        ),
+        23
+    );
+}
+
+fn co2(lines: Vec<String>) -> i32 {
+    let bits = lines.first().unwrap().len();
+
+    let mut set = lines;
+    for position in 0..=bits {
+        let ones = bitcount(&set, position);
+        let zeroes = set.len() as i32 - ones;
+        let keep = if ones >= zeroes { '0' } else { '1' };
+
+        set = set
+            .iter()
+            .filter(|l| l.chars().nth(position) == Some(keep))
+            .map(|s| s.to_string())
+            .collect();
+
+        if set.len() == 1 {
+            return i32::from_str_radix(set.first().unwrap(), 2).unwrap();
+        }
+    }
+    0
+}
+
+#[test]
+fn test_co2() {
+    assert_eq!(
+        co2(vec![
+            "00100", "11110", "10110", "10111", "10101", "01111", "00111", "11100", "10000",
+            "11001", "00010", "01010",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect()),
+        10
+    );
+}
+
+fn lifesupport(lines: Vec<String>) -> i32 {
+    oxygen(lines.clone()) * co2(lines)
+}
+
+#[test]
+fn test_lifesupport() {
+    assert_eq!(
+        lifesupport(
+            vec![
+                "00100", "11110", "10110", "10111", "10101", "01111", "00111", "11100", "10000",
+                "11001", "00010", "01010",
+            ]
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
+        ),
+        230
+    );
+}
+
 use std::io;
 
 fn main() {
     let statuses: Vec<_> = io::stdin().lines().map(|s| s.unwrap()).collect();
-    println!("{}", battery(statuses));
+    println!("{}", lifesupport(statuses));
 }
