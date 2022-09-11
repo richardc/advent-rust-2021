@@ -52,14 +52,14 @@ fn bitcount(lines: &Vec<String>, column: usize) -> i32 {
         .sum()
 }
 
-fn oxygen(lines: Vec<String>) -> i32 {
+fn bitselect(lines: Vec<String>, criteria: fn(i32, i32) -> char) -> i32 {
     let bits = lines.first().unwrap().len();
 
     let mut set = lines;
     for position in 0..=bits {
         let ones = bitcount(&set, position);
         let zeroes = set.len() as i32 - ones;
-        let keep = if ones >= zeroes { '1' } else { '0' };
+        let keep = criteria(ones, zeroes);
 
         set = set
             .iter()
@@ -72,6 +72,10 @@ fn oxygen(lines: Vec<String>) -> i32 {
         }
     }
     0
+}
+
+fn oxygen(lines: Vec<String>) -> i32 {
+    bitselect(lines, |ones, zeroes| if ones >= zeroes { '1' } else { '0' })
 }
 
 #[test]
@@ -91,25 +95,7 @@ fn test_oxygen() {
 }
 
 fn co2(lines: Vec<String>) -> i32 {
-    let bits = lines.first().unwrap().len();
-
-    let mut set = lines;
-    for position in 0..=bits {
-        let ones = bitcount(&set, position);
-        let zeroes = set.len() as i32 - ones;
-        let keep = if ones >= zeroes { '0' } else { '1' };
-
-        set = set
-            .iter()
-            .filter(|l| l.chars().nth(position) == Some(keep))
-            .map(|s| s.to_string())
-            .collect();
-
-        if set.len() == 1 {
-            return i32::from_str_radix(set.first().unwrap(), 2).unwrap();
-        }
-    }
-    0
+    bitselect(lines, |ones, zeroes| if ones >= zeroes { '0' } else { '1' })
 }
 
 #[test]
