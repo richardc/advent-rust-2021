@@ -165,6 +165,11 @@ fn test_bingo() {
 use std::io;
 
 fn main() {
+    //  Curious how much overhead is in the enum type for our simple u32 value:
+    // dbg!(std::mem::size_of::<Value>());
+    // dbg!(std::mem::size_of::<&Value>());
+    // on a 64-bit system both are 8 bytes
+
     let bingo = Game::from(io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>());
     println!("{}", bingo.winning_score());
 }
