@@ -45,11 +45,11 @@ fn test_battery() {
 fn bitcount(lines: &Vec<String>, column: usize) -> i32 {
     lines
         .iter()
-        .map(|s| match s.chars().nth(column) {
-            Some(c) if c == '1' => 1,
-            _ => 0,
+        .filter(|s| match s.chars().nth(column) {
+            Some(c) if c == '1' => true,
+            _ => false,
         })
-        .sum()
+        .count() as i32
 }
 
 fn bitselect(lines: Vec<String>, criteria: fn(i32, i32) -> char) -> i32 {
