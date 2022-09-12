@@ -46,10 +46,7 @@ fn test_battery() {
 fn bitcount(lines: &[String], column: usize) -> i32 {
     lines
         .iter()
-        .filter(|s| match s.chars().nth(column) {
-            Some(c) if c == '1' => true,
-            _ => false,
-        })
+        .filter(|s| matches!(s.chars().nth(column), Some(c) if c == '1'))
         .count() as i32
 }
 
