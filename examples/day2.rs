@@ -7,7 +7,7 @@ enum Command {
 
 impl From<String> for Command {
     fn from(command: String) -> Self {
-        if let Some((verb, distance)) = command.split_once(" ") {
+        if let Some((verb, distance)) = command.split_once(' ') {
             let d = distance.parse::<i32>().unwrap();
             match verb {
                 "forward" => Command::Forward(d),
