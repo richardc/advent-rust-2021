@@ -29,7 +29,7 @@ impl From<Vec<String>> for Game {
 
         let mut boards = vec![];
         let mut board = Board::default();
-        while let Some(l) = line.next() {
+        for l in line {
             if l.is_empty() {
                 boards.push(board);
                 board = Board::default();
