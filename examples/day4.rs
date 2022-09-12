@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum Value {
     Matched(u32),
     Unmatched(u32),
@@ -23,10 +23,26 @@ impl Board {
     }
 
     fn row_matched(&self) -> bool {
+        for row in &self.rows {
+            if row.iter().all(|x| matches!(x, Value::Matched(_))) {
+                return true;
+            }
+        }
         false
     }
 
     fn column_matched(&self) -> bool {
+        let columns = self.rows[0].len();
+        for c in 0..columns {
+            if self
+                .rows
+                .iter()
+                .map(|row| row[c])
+                .all(|x| matches!(x, Value::Matched(_)))
+            {
+                return true;
+            }
+        }
         false
     }
 
@@ -56,14 +72,17 @@ impl From<Vec<String>> for Board {
 #[test]
 fn test_board() {
     let mut board = Board::from(vec!["1 2 3".to_string()]);
+    assert_eq!(board.rows.len(), 1);
     assert_eq!(board.rows[0][0], Value::Unmatched(1));
     assert_eq!(board.rows[0][1], Value::Unmatched(2));
     assert_eq!(board.rows[0][2], Value::Unmatched(3));
+    assert_eq!(board.winning(), false);
 
     board.mark(2);
     assert_eq!(board.rows[0][0], Value::Unmatched(1));
     assert_eq!(board.rows[0][1], Value::Matched(2));
     assert_eq!(board.rows[0][2], Value::Unmatched(3));
+    assert_eq!(board.winning(), true);
 }
 
 struct Game {
