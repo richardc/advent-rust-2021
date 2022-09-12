@@ -21,6 +21,7 @@ impl From<String> for Command {
     }
 }
 
+#[allow(dead_code)]
 fn position(commands: Vec<String>) -> i32 {
     let mut horizontal = 0;
     let mut depth = 0;
