@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 fn battery(lines: Vec<String>) -> i32 {
     let mut counts: Vec<_> = lines.first().unwrap().chars().map(|_| 0).collect();
     let half = lines.len() / 2;
