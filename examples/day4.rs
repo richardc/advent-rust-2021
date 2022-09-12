@@ -83,10 +83,12 @@ impl From<Vec<String>> for Game {
             .collect();
 
         let mut boards = vec![];
-        for (_, group) in &line.group_by(|s| s.is_empty()) {
-            boards.push(Board::from(
-                group.map(|x| x.to_string()).collect::<Vec<String>>(),
-            ))
+        for (key, group) in &line.group_by(|s| !s.is_empty()) {
+            if key {
+                boards.push(Board::from(
+                    group.map(|x| x.to_string()).collect::<Vec<String>>(),
+                ))
+            }
         }
 
         Game {
@@ -135,7 +137,9 @@ fn test_bingo() {
             .collect::<Vec<_>>(),
     );
 
+    assert_eq!(game.boards.len(), 3);
     assert_eq!(game.boards[0].rows[0][0], Value::Unmatched(22));
+    assert_eq!(game.boards[2].rows[4][4], Value::Unmatched(7));
     assert_eq!(game.winning_score(), 4512);
 }
 
