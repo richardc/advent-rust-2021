@@ -1,21 +1,76 @@
+#[derive(Debug, PartialEq)]
+enum Value {
+    Matched(u32),
+    Unmatched(u32),
+}
+
 #[derive(Default)]
 struct Board {
-    rows: Vec<Vec<u32>>,
-    marked: Vec<u32>,
+    rows: Vec<Vec<Value>>,
 }
 
 impl Board {
-    fn mark(&self, _num: u32) {}
+    fn mark(&mut self, num: u32) {
+        for r in 0..self.rows.len() {
+            for c in 0..self.rows[r].len() {
+                if let Value::Unmatched(v) = self.rows[r][c] {
+                    if v == num {
+                        self.rows[r][c] = Value::Matched(num);
+                    }
+                }
+            }
+        }
+    }
 
-    fn winning(self) -> bool {
+    fn row_matched(&self) -> bool {
         false
     }
+
+    fn column_matched(&self) -> bool {
+        false
+    }
+
+    fn winning(&self) -> bool {
+        self.row_matched() || self.column_matched()
+    }
+
+    fn score(&self, num: u32) -> u32 {
+        num
+    }
+}
+
+impl From<Vec<String>> for Board {
+    fn from(lines: Vec<String>) -> Self {
+        let mut board = Board::default();
+        for l in lines {
+            board.rows.push(
+                l.split_whitespace()
+                    .map(|x| Value::Unmatched(x.parse::<u32>().unwrap()))
+                    .collect(),
+            );
+        }
+        board
+    }
+}
+
+#[test]
+fn test_board() {
+    let mut board = Board::from(vec!["1 2 3".to_string()]);
+    assert_eq!(board.rows[0][0], Value::Unmatched(1));
+    assert_eq!(board.rows[0][1], Value::Unmatched(2));
+    assert_eq!(board.rows[0][2], Value::Unmatched(3));
+
+    board.mark(2);
+    assert_eq!(board.rows[0][0], Value::Unmatched(1));
+    assert_eq!(board.rows[0][1], Value::Matched(2));
+    assert_eq!(board.rows[0][2], Value::Unmatched(3));
 }
 
 struct Game {
     numbers: Vec<u32>,
     boards: Vec<Board>,
 }
+use itertools::Itertools;
 
 impl From<Vec<String>> for Game {
     fn from(lines: Vec<String>) -> Self {
@@ -28,20 +83,11 @@ impl From<Vec<String>> for Game {
             .collect();
 
         let mut boards = vec![];
-        let mut board = Board::default();
-        for l in line {
-            if l.is_empty() {
-                boards.push(board);
-                board = Board::default();
-            } else {
-                board.rows.push(
-                    l.split_whitespace()
-                        .map(|x| x.parse::<u32>().unwrap())
-                        .collect(),
-                );
-            }
+        for (_, group) in &line.group_by(|s| s.is_empty()) {
+            boards.push(Board::from(
+                group.map(|x| x.to_string()).collect::<Vec<String>>(),
+            ))
         }
-        boards.push(board);
 
         Game {
             numbers: numbers,
@@ -88,7 +134,9 @@ fn test_bingo() {
             .map(|x| x.to_string())
             .collect::<Vec<_>>(),
     );
-    assert_eq!(game.winning_score(), 4512)
+
+    assert_eq!(game.boards[0].rows[0][0], Value::Unmatched(22));
+    assert_eq!(game.winning_score(), 4512);
 }
 
 use std::io;
