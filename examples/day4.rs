@@ -50,8 +50,15 @@ impl Board {
         self.row_matched() || self.column_matched()
     }
 
-    fn score(&self, num: u32) -> u32 {
-        num
+    fn score(&self) -> u32 {
+        self.rows
+            .iter()
+            .flatten()
+            .map(|v| match v {
+                Value::Unmatched(v) => *v,
+                _ => 0 as u32,
+            })
+            .sum()
     }
 }
 
@@ -83,6 +90,7 @@ fn test_board() {
     assert_eq!(board.rows[0][1], Value::Matched(2));
     assert_eq!(board.rows[0][2], Value::Unmatched(3));
     assert_eq!(board.winning(), true);
+    assert_eq!(board.score(), 4);
 }
 
 struct Game {
@@ -118,7 +126,15 @@ impl From<Vec<String>> for Game {
 }
 
 impl Game {
-    fn winning_score(self) -> i32 {
+    fn winning_score(&mut self) -> u32 {
+        for number in &self.numbers {
+            for board in &mut self.boards {
+                board.mark(*number);
+                if board.winning() {
+                    return *number * board.score();
+                }
+            }
+        }
         0
     }
 }
@@ -147,7 +163,7 @@ fn test_bingo() {
  2  0 12  3  7
 "#;
 
-    let game = Game::from(
+    let mut game = Game::from(
         example
             .to_string()
             .split('\n')
@@ -170,6 +186,6 @@ fn main() {
     // dbg!(std::mem::size_of::<&Value>());
     // on a 64-bit system both are 8 bytes
 
-    let bingo = Game::from(io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>());
+    let mut bingo = Game::from(io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>());
     println!("{}", bingo.winning_score());
 }
