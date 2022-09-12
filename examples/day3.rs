@@ -43,7 +43,7 @@ fn test_battery() {
     );
 }
 
-fn bitcount(lines: &Vec<String>, column: usize) -> i32 {
+fn bitcount(lines: &[String], column: usize) -> i32 {
     lines
         .iter()
         .filter(|s| match s.chars().nth(column) {
