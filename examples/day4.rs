@@ -125,6 +125,8 @@ impl From<Vec<String>> for Game {
     }
 }
 
+use std::collections::HashSet;
+
 impl Game {
     fn winning_score(&mut self) -> u32 {
         for number in &self.numbers {
@@ -132,6 +134,23 @@ impl Game {
                 board.mark(*number);
                 if board.winning() {
                     return *number * board.score();
+                }
+            }
+        }
+        0
+    }
+
+    fn losing_score(&mut self) -> u32 {
+        let mut winners = HashSet::new();
+        let count = self.boards.len();
+        for number in &self.numbers {
+            for (b, board) in &mut self.boards.iter_mut().enumerate() {
+                board.mark(*number);
+                if board.winning() {
+                    winners.insert(b);
+                    if winners.len() == count {
+                        return *number * board.score();
+                    }
                 }
             }
         }
@@ -176,6 +195,7 @@ fn test_bingo() {
     assert_eq!(game.boards[0].rows[0][0], Value::Unmatched(22));
     assert_eq!(game.boards[2].rows[4][4], Value::Unmatched(7));
     assert_eq!(game.winning_score(), 4512);
+    assert_eq!(game.losing_score(), 1924);
 }
 
 use std::io;
@@ -188,4 +208,5 @@ fn main() {
 
     let mut bingo = Game::from(io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>());
     println!("{}", bingo.winning_score());
+    println!("{}", bingo.losing_score());
 }
