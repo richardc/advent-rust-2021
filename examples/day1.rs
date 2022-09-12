@@ -1,7 +1,7 @@
 use std::io;
 
 fn increases(samples: Vec<u32>) -> u32 {
-    if samples.len() == 0 {
+    if samples.is_empty() {
         return 0;
     }
 
