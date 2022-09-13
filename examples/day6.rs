@@ -19,10 +19,9 @@ fn test_parse() {
 }
 
 fn step(pop: Population) -> Population {
-    let breeders = pop[0];
-    let mut next = pop.clone();
+    let mut next = pop;
     next.rotate_left(1);
-    next[6] += breeders;
+    next[6] += pop[0];
     next
 }
 
@@ -35,7 +34,7 @@ fn test_step() {
 }
 
 fn run(pop: Population, steps: u32) -> Count {
-    let mut last = pop.clone();
+    let mut last = pop;
     for _ in 0..steps {
         last = step(last)
     }
