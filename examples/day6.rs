@@ -1,4 +1,5 @@
-type Population = [u32; 9];
+type Count = u64;
+type Population = [Count; 9];
 
 fn parse(str: String) -> Population {
     let mut pop = [0; 9];
@@ -33,7 +34,7 @@ fn test_step() {
     );
 }
 
-fn run(pop: Population, steps: u32) -> u32 {
+fn run(pop: Population, steps: u32) -> Count {
     let mut last = pop.clone();
     for _ in 0..steps {
         last = step(last)
@@ -50,11 +51,13 @@ fn test_run() {
 #[test]
 fn test_example() {
     assert_eq!(run(parse(String::from("3,4,3,1,2")), 80), 5934);
+    assert_eq!(run(parse(String::from("3,4,3,1,2")), 256), 26984457539);
 }
 
 use std::io;
 
 fn main() {
     let start = io::stdin().lines().next().unwrap().unwrap();
-    println!("{}", run(parse(start), 80));
+    println!("{}", run(parse(start.clone()), 80));
+    println!("{}", run(parse(start), 256));
 }
