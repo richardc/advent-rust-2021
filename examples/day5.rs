@@ -121,17 +121,14 @@ fn test_danger_zones() {
 0,0 -> 8,8
 5,5 -> 8,2
 "#;
-    assert_eq!(
-        danger_zones(
-            example
-                .to_string()
-                .split('\n')
-                .skip(1)
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>(),
-        ),
-        5
-    );
+    let lines = example
+        .to_string()
+        .split('\n')
+        .skip(1)
+        .map(|x| x.to_string())
+        .collect::<Vec<_>>();
+
+    assert_eq!(danger_zones(lines), 5);
 }
 
 use std::io;
