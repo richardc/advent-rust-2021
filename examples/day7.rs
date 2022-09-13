@@ -46,10 +46,9 @@ fn test_cheapest() {
 
 use memoize::memoize;
 
-// It's fib, so memo it
 #[memoize]
 fn fuel_cost(distance: Pos) -> Pos {
-    (1..=distance).into_iter().fold(0, |d, s| d + s)
+    (1..=distance).into_iter().sum()
 }
 
 #[test]
