@@ -3,7 +3,6 @@ type Digit = u8;
 enum Output {
     Is(Digit),
     Maybe(Vec<Digit>),
-    None,
 }
 
 fn output_is(s: &str) -> Output {
@@ -14,7 +13,7 @@ fn output_is(s: &str) -> Output {
         5 => Output::Maybe(vec![2, 3, 5]),
         6 => Output::Maybe(vec![0, 6, 9]),
         7 => Output::Is(8),
-        _ => Output::None,
+        _ => panic!("Impossible input"),
     }
 }
 
