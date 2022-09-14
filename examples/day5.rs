@@ -19,7 +19,7 @@ impl From<String> for Point {
 
 impl From<(u32, u32)> for Point {
     fn from((x, y): (u32, u32)) -> Self {
-        Point { x: x, y: y }
+        Point { x, y }
     }
 }
 
