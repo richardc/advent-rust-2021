@@ -135,6 +135,7 @@ fn test_edge() {
 }
 use std::collections::HashMap;
 
+#[allow(dead_code)]
 fn draw_points(points: &HashMap<Point, i32>) {
     let x1 = points.keys().map(|p| p.x).min().unwrap();
     let x2 = points.keys().map(|p| p.x).max().unwrap();
