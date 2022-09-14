@@ -118,10 +118,7 @@ impl From<Vec<String>> for Game {
             }
         }
 
-        Game {
-            numbers: numbers,
-            boards: boards,
-        }
+        Game { numbers, boards }
     }
 }
 
