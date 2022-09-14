@@ -54,9 +54,9 @@ impl Board {
         self.rows
             .iter()
             .flatten()
-            .map(|v| match v {
-                Value::Unmatched(v) => *v,
-                _ => 0 as u32,
+            .map(|&v| match v {
+                Value::Unmatched(v) => v,
+                _ => 0,
             })
             .sum()
     }
