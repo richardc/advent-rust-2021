@@ -20,11 +20,10 @@ fn output_is(s: &str) -> Output {
 fn known_outputs(input: &[&str]) -> usize {
     input
         .iter()
-        .map(|l| match l.split_once('|') {
+        .flat_map(|l| match l.split_once('|') {
             Some((_, out)) => out.trim().split(' ').collect(),
             None => vec![],
         })
-        .flatten()
         .map(output_is)
         .filter(|x| matches!(x, Output::Is(_)))
         .count()
