@@ -13,7 +13,7 @@ fn output_is(s: &str) -> Output {
         5 => Output::Maybe(vec![2, 3, 5]),
         6 => Output::Maybe(vec![0, 6, 9]),
         7 => Output::Is(8),
-        _ => panic!("Impossible input"),
+        _ => unreachable!(),
     }
 }
 
@@ -51,9 +51,51 @@ gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
     );
 }
 
+fn decode_segments(s: &str) -> u32 {
+    let one = s.split(' ').find(|s| s.len() == 2).unwrap();
+    let four = s.split(' ').find(|s| s.len() == 4).unwrap();
+    let digits = s.split_once('|').unwrap().1.trim();
+
+    digits
+        .split(' ')
+        .map(|s| match s.len() {
+            2 => 1,
+            4 => 4,
+            3 => 7,
+            7 => 8,
+            len => {
+                let ones = one.chars().filter(|&c| s.contains(c)).count();
+                let fours = four.chars().filter(|&c| s.contains(c)).count();
+                match (len, ones, fours) {
+                    (6, _, 3) => 0,
+                    (5, 1, 2) => 2,
+                    (5, 2, 3) => 3,
+                    (5, 1, 3) => 5,
+                    (6, 1, _) => 6,
+                    (6, _, 4) => 9,
+                    _ => unreachable!(),
+                }
+            }
+        })
+        .fold(0, |acc, x| acc * 10 + x)
+}
+
+fn decode_all_segments(input: &[&str]) -> u32 {
+    input.iter().map(|&s| decode_segments(s)).sum()
+}
+
+#[test]
+fn test_decode_segments() {
+    let example =
+        "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf";
+
+    assert_eq!(decode_segments(example), 5353);
+}
+
 use std::io;
 fn main() {
     let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
     let input = lines.iter().map(|x| x.as_str()).collect::<Vec<_>>();
     println!("{}", known_outputs(&input));
+    println!("{}", decode_all_segments(&input));
 }
