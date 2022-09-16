@@ -2,7 +2,7 @@
 enum Validation {
     Ok,
     Invalid(char),
-    Incomplete,
+    Incomplete(String),
 }
 
 fn validate(syntax: &str) -> Validation {
@@ -26,7 +26,7 @@ fn validate(syntax: &str) -> Validation {
         }
     }
     if !stack.is_empty() {
-        return Validation::Incomplete;
+        return Validation::Incomplete(String::from_iter(stack.into_iter().rev()));
     }
     Validation::Ok
 }
@@ -42,7 +42,10 @@ fn test_validate() {
 
     assert_eq!(validate("}"), Validation::Invalid('}'));
 
-    assert_eq!(validate("["), Validation::Incomplete);
+    assert_eq!(validate("["), Validation::Incomplete(String::from("]")));
+
+    assert_eq!(validate("[("), Validation::Incomplete(String::from(")]")));
+
     assert_eq!(
         validate("{([(<{}[<>[]}>{[]{[(<()>"),
         Validation::Invalid('}')
@@ -92,7 +95,60 @@ fn test_syntax_score() {
     assert_eq!(syntax_score(&lines), 26397);
 }
 
+fn score_autocomplete(s: &str) -> u64 {
+    match validate(s) {
+        Validation::Incomplete(completion) => completion
+            .chars()
+            .map(|c| match c {
+                ')' => 1,
+                ']' => 2,
+                '}' => 3,
+                '>' => 4,
+                _ => unreachable!(),
+            })
+            .fold(0, |acc, v| acc * 5 + v),
+        _ => 0,
+    }
+}
+
+#[test]
+fn test_score_autocomplete() {
+    assert_eq!(score_autocomplete("<{([{{}}[<[[[<>{}]]]>[]]"), 294);
+    assert_eq!(score_autocomplete("[(()[<>])]({[<{<<[]>>("), 5566);
+}
+
+fn score_auto_many(lines: &[&str]) -> u64 {
+    let scored = lines
+        .iter()
+        .map(|s| score_autocomplete(s))
+        .filter(|&x| x != 0)
+        .sorted()
+        .collect::<Vec<_>>();
+    scored[scored.len() / 2]
+}
+
+#[test]
+fn test_score_auto_many() {
+    let example = r#"
+[({(<(())[]>[[{[]{<()<>>
+[(()[<>])]({[<{<<[]>>(
+{([(<{}[<>[]}>{[]{[(<()>
+(((({<>}<{<{<>}{[]{[]{}
+[[<[([]))<([[{}[[()]]]
+[{[{({}]{}}([{[{{{}}([]
+{<[[]]>}<{[{[{[]{()[[[]
+[<(<(<(<{}))><([]([]()
+<{([([[(<>()){}]>(<<{{
+<{([{{}}[<[[[<>{}]]]>[]]
+"#;
+
+    let lines = example.trim().split('\n').collect::<Vec<_>>();
+    assert_eq!(score_auto_many(&lines), 288957);
+}
+
 use std::io;
+
+use itertools::Itertools;
 
 fn main() {
     let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
@@ -100,4 +156,5 @@ fn main() {
     let slice: &[&str] = &input;
 
     println!("{}", syntax_score(slice));
+    println!("{}", score_auto_many(slice));
 }
