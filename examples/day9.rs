@@ -111,7 +111,7 @@ fn biggest_basins(map: &Heightmap) -> u32 {
         .sorted()
         .rev()
         .take(3)
-        .fold(1, |acc, v| acc * v)
+        .product()
 }
 
 use std::io;
