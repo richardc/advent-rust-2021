@@ -48,6 +48,37 @@ impl Heightmap {
         }
         low
     }
+
+    fn basin_sizes(&self) -> Vec<u32> {
+        fn basin(m: &mut Vec<Vec<u8>>, x: usize, y: usize) -> u32 {
+            m[x][y] = 9;
+            let mut c = 1;
+            if x > 0 && m[x - 1][y] != 9 {
+                c += basin(m, x - 1, y);
+            }
+            if x < m.len() - 1 && m[x + 1][y] != 9 {
+                c += basin(m, x + 1, y);
+            }
+            if y > 0 && m[x][y - 1] != 9 {
+                c += basin(m, x, y - 1);
+            }
+            if y < m[0].len() - 1 && m[x][y + 1] != 9 {
+                c += basin(m, x, y + 1);
+            }
+            c
+        }
+
+        let mut m = self.map.clone();
+        let mut sizes = vec![];
+        for x in 0..m.len() - 1 {
+            for y in 0..m[x].len() - 1 {
+                if m[x][y] != 9 {
+                    sizes.push(basin(&mut m, x, y))
+                }
+            }
+        }
+        sizes
+    }
 }
 
 #[test]
@@ -64,11 +95,23 @@ fn test_low_points() {
     let slice: &[&str] = &input;
     let map = Heightmap::from(slice);
     assert_eq!(map.low_points(), [1, 0, 5, 5]);
-    assert_eq!(risk_level(map), 15);
+    assert_eq!(risk_level(&map), 15);
+    assert_eq!(map.basin_sizes(), [3, 9, 14, 9]);
 }
 
-fn risk_level(heightmap: Heightmap) -> u32 {
+fn risk_level(heightmap: &Heightmap) -> u32 {
     heightmap.low_points().iter().map(|&x| x as u32 + 1).sum()
+}
+
+use itertools::Itertools;
+
+fn biggest_basins(map: &Heightmap) -> u32 {
+    map.basin_sizes()
+        .into_iter()
+        .sorted()
+        .rev()
+        .take(3)
+        .fold(1, |acc, v| acc * v)
 }
 
 use std::io;
@@ -78,5 +121,7 @@ fn main() {
     let input = lines.iter().map(|x| x.as_str()).collect::<Vec<_>>();
     let slice: &[&str] = &input;
 
-    println!("{}", risk_level(Heightmap::from(slice)));
+    let map = Heightmap::from(slice);
+    println!("{}", risk_level(&map));
+    println!("{}", biggest_basins(&map));
 }
