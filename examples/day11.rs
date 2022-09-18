@@ -61,7 +61,7 @@ impl State {
         // You get an energy, and you get an energy!
         self.data += 1;
 
-        let (xmax, ymax) = self.data.dim();
+        let (xdim, ydim) = self.data.dim();
         let mut seen = HashSet::<(usize, usize)>::new();
         loop {
             let flashed = HashSet::from_iter(
@@ -75,8 +75,8 @@ impl State {
                 for &(x, y) in flashed.difference(&seen) {
                     // add energy to each neighbour
                     let mut neighbours = self.data.slice_mut(s![
-                        x.saturating_sub(1)..min(xmax, x + 2),
-                        y.saturating_sub(1)..min(ymax, y + 2)
+                        x.saturating_sub(1)..min(xdim, x + 2),
+                        y.saturating_sub(1)..min(ydim, y + 2)
                     ]);
                     neighbours += 1;
                 }
