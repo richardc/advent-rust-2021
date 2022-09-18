@@ -144,6 +144,25 @@ fn test_count_flashes() {
     assert_eq!(count_flashes(&state, 100), 1656);
 }
 
+fn when_everyone_flashes(start: &State) -> usize {
+    let mut state = start.clone();
+    let everyone = state.data.len();
+    for step in 1.. {
+        if state.step() == everyone {
+            return step;
+        }
+    }
+    unreachable!()
+}
+
+#[test]
+fn test_when_everyone_flashes() {
+    let vec = EXAMPLE.trim().split('\n').to_owned().collect::<Vec<_>>();
+    let state = State::from(vec);
+
+    assert_eq!(when_everyone_flashes(&state), 195);
+}
+
 use std::io;
 
 fn main() {
@@ -152,4 +171,5 @@ fn main() {
 
     let state = State::from(input);
     println!("{}", count_flashes(&state, 100));
+    println!("{}", when_everyone_flashes(&state));
 }
