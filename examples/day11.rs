@@ -12,7 +12,7 @@ const EXAMPLE: &str = r#"
 5283751526
 "#;
 
-use std::collections::HashSet;
+use std::{cmp::min, collections::HashSet};
 
 use ndarray::prelude::*;
 
@@ -61,6 +61,7 @@ impl State {
         // You get an energy, and you get an energy!
         self.data += 1;
 
+        let (xmax, ymax) = self.data.dim();
         let mut seen = HashSet::<(usize, usize)>::new();
         loop {
             let flashed = HashSet::from_iter(
@@ -73,35 +74,11 @@ impl State {
                 // new flashes to handle
                 for &(x, y) in flashed.difference(&seen) {
                     // add energy to each neighbour
-                    // todo - all this bounds checking is tedious and noisy, there
-                    // must be a better way through constructing a mutable
-                    // ArrayView/Slice in ndarray
-                    if y < self.data.dim().1 - 1 {
-                        if x > 0 {
-                            self.data[[x - 1, y + 1]] += 1;
-                        }
-                        self.data[[x, y + 1]] += 1;
-                        if x < self.data.dim().0 - 1 {
-                            self.data[[x + 1, y + 1]] += 1;
-                        }
-                    }
-
-                    if x > 0 {
-                        self.data[[x - 1, y]] += 1;
-                    }
-                    if x < self.data.dim().0 - 1 {
-                        self.data[[x + 1, y]] += 1;
-                    }
-
-                    if y > 0 {
-                        if x > 0 {
-                            self.data[[x - 1, y - 1]] += 1;
-                        }
-                        self.data[[x, y - 1]] += 1;
-                        if x < self.data.dim().0 - 1 {
-                            self.data[[x + 1, y - 1]] += 1;
-                        }
-                    }
+                    let mut neighbours = self.data.slice_mut(s![
+                        x.saturating_sub(1)..min(xmax, x + 2),
+                        y.saturating_sub(1)..min(ymax, y + 2)
+                    ]);
+                    neighbours += 1;
                 }
                 seen = flashed;
             } else {
