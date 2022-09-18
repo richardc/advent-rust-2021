@@ -1,3 +1,4 @@
+#[allow(dead_code)] // used in tests
 const EXAMPLE: &str = r#"
 5483143223
 2745854711
@@ -21,6 +22,7 @@ struct State {
 }
 
 impl State {
+    #[allow(dead_code)] // used in tests
     fn new(x: usize, y: usize) -> Self {
         State {
             data: Array::zeros((x, y)),
