@@ -85,6 +85,29 @@ impl Puzzle {
             }
         }
     }
+
+    fn apply_commands(&mut self) {
+        for i in 0..self.commands.len() {
+            self.apply_command(i)
+        }
+    }
+
+    fn print(&self) {
+        let xmax = self.points.iter().map(|p| p.0).max().unwrap();
+        let ymax = self.points.iter().map(|p| p.1).max().unwrap();
+        for y in 0..=ymax {
+            println!(
+                "{}",
+                (0..=xmax)
+                    .map(|x| if self.points.contains(&Point(x, y)) {
+                        '#'
+                    } else {
+                        ' '
+                    })
+                    .collect::<String>()
+            )
+        }
+    }
 }
 
 #[test]
@@ -114,12 +137,15 @@ fold along x=5
 "#;
 
     let mut puzzle = Puzzle::from(example.trim().split('\n').collect::<Vec<&str>>());
-    dbg!(&puzzle);
     assert_eq!(puzzle.points.len(), 18);
     assert_eq!(puzzle.commands.len(), 2);
 
     puzzle.apply_command(0);
     assert_eq!(puzzle.points.len(), 17);
+
+    let mut puzzle = Puzzle::from(example.trim().split('\n').collect::<Vec<&str>>());
+    puzzle.apply_commands();
+    assert_eq!(puzzle.points.len(), 16);
 }
 
 use std::io;
@@ -130,9 +156,16 @@ fn step1(input: Vec<&str>) -> usize {
     puzzle.points.len()
 }
 
+fn step2(input: Vec<&str>) {
+    let mut puzzle = Puzzle::from(input);
+    puzzle.apply_commands();
+    puzzle.print();
+}
+
 fn main() {
     let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
     let input = lines.iter().map(|x| x.as_str()).collect::<Vec<_>>();
 
-    println!("{}", step1(input))
+    println!("{}", step1(input.clone()));
+    step2(input);
 }
