@@ -12,9 +12,11 @@ impl FromIterator<String> for Puzzle {
         let mut lines = iter.into_iter();
         let start = lines.next().unwrap();
         Puzzle {
-            start: start,
+            start,
             rules: HashMap::from_iter(lines.skip(1).map(|x| {
                 let (a, b) = x.split_once(" -> ").unwrap();
+                #[allow(clippy::iter_nth_zero)]
+                // we want 0 and 1, so nth(0) -> next() makes the nth(1) look funky
                 (
                     (a.chars().nth(0).unwrap(), a.chars().nth(1).unwrap()),
                     b.chars().nth(0).unwrap(),
