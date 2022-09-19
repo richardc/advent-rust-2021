@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 struct Puzzle {
     start: String,
-    rules: HashMap<String, String>,
+    rules: HashMap<(char, char), char>,
 }
 
 impl FromIterator<String> for Puzzle {
@@ -15,7 +15,10 @@ impl FromIterator<String> for Puzzle {
             start: start,
             rules: HashMap::from_iter(lines.skip(1).map(|x| {
                 let (a, b) = x.split_once(" -> ").unwrap();
-                (a.to_string(), b.to_string())
+                (
+                    (a.chars().nth(0).unwrap(), a.chars().nth(1).unwrap()),
+                    b.chars().nth(0).unwrap(),
+                )
             })),
         }
     }
@@ -26,8 +29,7 @@ impl Puzzle {
         let mut result: Vec<String> = vec![];
         s.chars().tuple_windows::<(_, _)>().for_each(|(a, b)| {
             result.push(a.to_string());
-            let key = String::from_iter([a, b]);
-            result.push(self.rules.get(&key).unwrap().to_string());
+            result.push(self.rules.get(&(a, b)).unwrap().to_string());
         });
         result.push(s.chars().last().unwrap().to_string());
         result.join("")
