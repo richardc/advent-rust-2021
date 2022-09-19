@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::io;
 
+use itertools::Itertools;
+
 #[derive(Default, Debug)]
 struct Map {
     paths: HashMap<String, Vec<String>>,
@@ -27,7 +29,7 @@ impl From<Vec<&str>> for Map {
 }
 
 impl Map {
-    fn walk(&self, next: &String, from: Vec<String>) -> usize {
+    fn walk(&self, next: &String, from: Vec<String>, visit_twice: bool) -> usize {
         let mut count = 0;
         for exit in self.paths.get(next).unwrap() {
             if exit == "end" {
@@ -39,19 +41,42 @@ impl Map {
                 continue;
             }
 
-            if *exit == exit.to_ascii_lowercase() && from.contains(&exit) {
-                continue;
+            if *exit == exit.to_ascii_lowercase() {
+                // small cave
+                if visit_twice {
+                    let counts = from
+                        .iter()
+                        .chain([next])
+                        .filter(|&s| *s == s.to_ascii_lowercase())
+                        .counts();
+
+                    let have_looped = counts.values().any(|&x| x == 2);
+
+                    if have_looped {
+                        if from.contains(&exit) {
+                            continue;
+                        }
+                    }
+                } else {
+                    if from.contains(&exit) {
+                        continue;
+                    }
+                }
             }
 
             let mut path = from.clone();
             path.push(next.to_string());
-            count += self.walk(exit, path);
+            count += self.walk(exit, path, visit_twice);
         }
         count
     }
 
     fn count_paths(&self) -> usize {
-        self.walk(&"start".to_string(), vec![])
+        self.walk(&"start".to_string(), vec![], false)
+    }
+
+    fn count_paths_advanced(&self) -> usize {
+        self.walk(&"start".to_string(), vec![], true)
     }
 }
 
@@ -71,6 +96,7 @@ b-end
     let map = Map::from(input);
 
     assert_eq!(map.count_paths(), 10);
+    assert_eq!(map.count_paths_advanced(), 36);
 
     let example = r#"
 dc-end
@@ -89,6 +115,7 @@ kj-dc
     let map = Map::from(input);
 
     assert_eq!(map.count_paths(), 19);
+    assert_eq!(map.count_paths_advanced(), 103);
 
     let example = r#"
 fs-end
@@ -115,6 +142,7 @@ start-RW
     let map = Map::from(input);
 
     assert_eq!(map.count_paths(), 226);
+    assert_eq!(map.count_paths_advanced(), 3509);
 }
 
 fn main() {
@@ -123,5 +151,6 @@ fn main() {
 
     let map = Map::from(input);
 
-    println!("{}", map.count_paths())
+    println!("{}", map.count_paths());
+    println!("{}", map.count_paths_advanced());
 }
