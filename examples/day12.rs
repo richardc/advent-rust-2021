@@ -16,12 +16,12 @@ impl From<Vec<&str>> for Map {
                 map.paths
                     .entry(from.to_string())
                     .and_modify(|c| c.push(to.to_string()))
-                    .or_insert(vec![to.to_string()]);
+                    .or_insert_with(|| vec![to.to_string()]);
 
                 map.paths
                     .entry(to.to_string())
                     .and_modify(|c| c.push(from.to_string()))
-                    .or_insert(vec![from.to_string()]);
+                    .or_insert_with(|| vec![from.to_string()]);
             }
         }
         map
