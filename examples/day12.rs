@@ -44,23 +44,19 @@ impl Map {
             if *exit == exit.to_ascii_lowercase() {
                 // small cave
                 if visit_twice {
-                    let counts = from
+                    let have_looped = from
                         .iter()
                         .chain([next])
                         .filter(|&s| *s == s.to_ascii_lowercase())
-                        .counts();
+                        .counts()
+                        .values()
+                        .any(|&x| x == 2);
 
-                    let have_looped = counts.values().any(|&x| x == 2);
-
-                    if have_looped {
-                        if from.contains(&exit) {
-                            continue;
-                        }
-                    }
-                } else {
-                    if from.contains(&exit) {
+                    if have_looped && from.contains(exit) {
                         continue;
                     }
+                } else if from.contains(exit) {
+                    continue;
                 }
             }
 
