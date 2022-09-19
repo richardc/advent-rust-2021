@@ -25,7 +25,7 @@ impl FromIterator<String> for Puzzle {
 }
 
 impl Puzzle {
-    fn step(&self, s: String) -> String {
+    fn step_simple(&self, s: String) -> String {
         let mut result: Vec<String> = vec![];
         s.chars().tuple_windows::<(_, _)>().for_each(|(a, b)| {
             result.push(a.to_string());
@@ -38,7 +38,7 @@ impl Puzzle {
     fn steps(&self, step: usize) -> String {
         let mut result = self.start.clone();
         for _ in 0..step {
-            result = self.step(result);
+            result = self.step_simple(result);
         }
         result
     }
@@ -47,6 +47,49 @@ impl Puzzle {
         let polymer = self.steps(10);
         let counts = polymer.chars().counts();
         counts.values().max().unwrap() - counts.values().min().unwrap()
+    }
+
+    fn step_pairs(&self, counts: HashMap<(char, char), usize>) -> HashMap<(char, char), usize> {
+        let mut new_pairs = HashMap::new();
+        for (pair, count) in counts {
+            let &insert = self.rules.get(&pair).unwrap();
+            new_pairs
+                .entry((pair.0, insert))
+                .and_modify(|v| *v += count)
+                .or_insert(count);
+            new_pairs
+                .entry((insert, pair.1))
+                .and_modify(|v| *v += count)
+                .or_insert(count);
+        }
+        new_pairs
+    }
+
+    fn step_pairwise(&self, count: usize) -> HashMap<(char, char), usize> {
+        let mut counts =
+            HashMap::from_iter(self.start.chars().tuple_windows::<(_, _)>().map(|t| (t, 1)));
+        for _ in 0..count {
+            counts = self.step_pairs(counts);
+        }
+        counts
+    }
+
+    fn step_2(&self) -> usize {
+        let pair_counts = self.step_pairwise(40);
+        let mut char_counts = HashMap::new();
+        pair_counts.iter().for_each(|((a, _), &count)| {
+            char_counts
+                .entry(a)
+                .and_modify(|v| *v += count)
+                .or_insert(count);
+        });
+
+        let last_char = self.start.chars().last().unwrap();
+        char_counts
+            .entry(&last_char)
+            .and_modify(|v| *v += 1)
+            .or_insert(1);
+        char_counts.values().max().unwrap() - char_counts.values().min().unwrap()
     }
 }
 
@@ -85,10 +128,13 @@ CN -> C
     );
 
     assert_eq!(puzzle.step_1(), 1588);
+    // Naiive polymer code blows up memory real bad after 40 steps
+    assert_eq!(puzzle.step_2(), 2188189693529);
 }
 
 fn main() {
     let lines = io::stdin().lines().map(|s| s.unwrap());
     let puzzle = Puzzle::from_iter(lines);
     println!("{}", puzzle.step_1());
+    println!("{}", puzzle.step_2());
 }
