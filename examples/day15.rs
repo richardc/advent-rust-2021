@@ -46,11 +46,6 @@ impl PartialOrd for State {
 }
 
 impl Puzzle {
-    fn far_corner(&self) -> Point {
-        let (x, y) = self.map.dim();
-        Point(x - 1, y - 1)
-    }
-
     fn adjacent(&self, Point(x, y): Point) -> Vec<Point> {
         let mut adj = vec![];
         if x > 1 {
@@ -70,19 +65,22 @@ impl Puzzle {
         adj
     }
 
-    fn shortest_path(&self, from: Point, to: Point) -> usize {
+    fn shortest_path(&self) -> usize {
+        let start = Point(0, 0);
+        let end = Point(self.map.dim().0 - 1, self.map.dim().1 - 1);
+
         // Dijkstra's algorithm - from the manpage for std::collections::binaryheap
         let mut dist = Array::from_elem(self.map.dim(), usize::MAX);
-        dist[[from.0, from.1]] = 0;
+        dist[[start.0, start.1]] = 0;
 
         let mut queue = BinaryHeap::new();
         queue.push(State {
             cost: 0,
-            position: from,
+            position: start,
         });
 
         while let Some(State { cost, position }) = queue.pop() {
-            if position == to {
+            if position == end {
                 return cost;
             }
 
@@ -126,12 +124,12 @@ fn test_puzzle() {
 
     assert_eq!(puzzle.map[[0, 0]], 1);
     assert_eq!(puzzle.map[[5, 5]], 2);
-    assert_eq!(puzzle.shortest_path(Point(0, 0), puzzle.far_corner()), 40);
+    assert_eq!(puzzle.shortest_path(), 40);
 }
 
 fn main() {
     let lines = io::stdin().lines().map(|s| s.unwrap());
     let puzzle = Puzzle::from_iter(lines);
 
-    println!("{}", puzzle.shortest_path(Point(0, 0), puzzle.far_corner()));
+    println!("{}", puzzle.shortest_path());
 }
