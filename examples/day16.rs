@@ -215,7 +215,7 @@ fn test_sum_versions() {
     assert_eq!(sum_versions("A0016C880162017C3686B18A3D4780"), 31);
 }
 
-fn eval_list(on: &Vec<Packet>) -> impl Iterator<Item = Number> + '_ {
+fn eval_list(on: &[Packet]) -> impl Iterator<Item = Number> + '_ {
     on.iter().map(|p| {
         if let Value::Literal(v) = eval(p.value.clone()) {
             v
@@ -273,14 +273,18 @@ fn eval_wrapped(s: &str) -> Number {
 
 #[test]
 fn test_eval_wrapped() {
-    assert_eq!(eval_wrapped("C200B40A82"), 3);
-    assert_eq!(eval_wrapped("04005AC33890"), 54);
-    assert_eq!(eval_wrapped("880086C3E88112"), 7);
-    assert_eq!(eval_wrapped("CE00C43D881120"), 9);
-    assert_eq!(eval_wrapped("D8005AC2A8F0"), 1);
-    assert_eq!(eval_wrapped("F600BC2D8F"), 0);
-    assert_eq!(eval_wrapped("9C005AC2F8F0"), 0);
-    assert_eq!(eval_wrapped("9C0141080250320F1802104A08"), 1);
+    assert_eq!(eval_wrapped("C200B40A82"), 3, "1+2 == 3");
+    assert_eq!(eval_wrapped("04005AC33890"), 54, "6*9 == 54");
+    assert_eq!(eval_wrapped("880086C3E88112"), 7, "min(7,8,9) == 7");
+    assert_eq!(eval_wrapped("CE00C43D881120"), 9, "max(7,8,9) == 9");
+    assert_eq!(eval_wrapped("D8005AC2A8F0"), 1, "5 < 15 == 1");
+    assert_eq!(eval_wrapped("F600BC2D8F"), 0, "5 > 15 == 0");
+    assert_eq!(eval_wrapped("9C005AC2F8F0"), 0, "5 != 15 == 0");
+    assert_eq!(
+        eval_wrapped("9C0141080250320F1802104A08"),
+        1,
+        "(1 + 3) == (2 * 2)"
+    );
 }
 
 fn main() {
