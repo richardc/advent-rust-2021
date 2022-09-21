@@ -286,6 +286,6 @@ fn test_eval_wrapped() {
 fn main() {
     let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
     let packet = &lines[0];
-    println!("{}", sum_versions(&packet));
-    println!("{}", eval_wrapped(&packet));
+    println!("{}", sum_versions(packet));
+    println!("{}", eval_wrapped(packet));
 }
