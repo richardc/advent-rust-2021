@@ -66,88 +66,115 @@ fn test_decode_binary() {
     assert_eq!(decode_binary(b"100"), 4);
 }
 
-fn decode_literal(bits: &[u8]) -> Value {
+fn decode_literal(bits: &[u8]) -> (&[u8], Value) {
     let mut value = 0;
+    let mut used = 0;
     for chunk in bits.chunks(5) {
         value = (value << 4) + decode_binary(&chunk[1..]);
+        used += 5;
 
         if chunk[0] == b'0' {
             break;
         }
     }
-    Value::Literal(value)
+    (&bits[used..], Value::Literal(value))
 }
 
-fn decode_operation(kind: u32, bits: &[u8]) -> Value {
+fn decode_operation(kind: u32, bits: &[u8]) -> (&[u8], Value) {
     // length type id
     if bits[0] == b'0' {
         let len = decode_binary(&bits[1..16]);
         dbg!(len);
-        return Value::Operation {
-            kind: kind,
-            on: vec![decode_packet(&bits[16..(16 + len as usize)])],
-        };
+        let (rem, on) = decode_packet(&bits[16..(16 + len) as usize]);
+        return (
+            rem,
+            Value::Operation {
+                kind: kind,
+                on: vec![on],
+            },
+        );
     } else {
         let count = decode_binary(&bits[1..12]);
     }
-    Value::Operation {
-        kind: kind,
-        on: vec![],
-    }
+
+    (
+        bits,
+        Value::Operation {
+            kind: kind,
+            on: vec![],
+        },
+    )
 }
 
-fn decode(hex: &str) -> Packet {
-    let bits = hex_to_bits(hex);
+fn decode(bits: &[u8]) -> (&[u8], Packet) {
     decode_packet(&bits)
 }
 
-fn decode_packet(bits: &[u8]) -> Packet {
+fn decode_packet(bits: &[u8]) -> (&[u8], Packet) {
     let version = decode_binary(&bits[0..3]);
     let packet_type = decode_binary(&bits[3..6]);
 
     match packet_type {
-        4 => Packet {
-            version: version,
-            value: decode_literal(&bits[6..]),
-        },
-        _ => Packet {
-            version: version,
-            value: decode_operation(packet_type, &bits[6..]),
-        },
+        4 => {
+            let (remainder, value) = decode_literal(&bits[6..]);
+            (
+                remainder,
+                Packet {
+                    version: version,
+                    value: value,
+                },
+            )
+        }
+        _ => {
+            let (remainder, value) = decode_operation(packet_type, &bits[6..]);
+            (
+                remainder,
+                Packet {
+                    version: version,
+                    value: value,
+                },
+            )
+        }
     }
 }
 
 #[test]
 fn test_decode_packet_literal() {
     assert_eq!(
-        decode("D2FE28"),
-        Packet {
-            version: 6,
-            value: Value::Literal(2021)
-        }
+        decode(&hex_to_bits("D2FE28")),
+        (
+            b"000".as_slice(),
+            Packet {
+                version: 6,
+                value: Value::Literal(2021)
+            }
+        )
     )
 }
 
 #[test]
 fn test_decode_packet_operator() {
     assert_eq!(
-        decode("38006F45291200"),
-        Packet {
-            version: 1,
-            value: Value::Operation {
-                kind: 6,
-                on: vec![
-                    Packet {
-                        version: 6,
-                        value: Value::Literal(10)
-                    },
-                    Packet {
-                        version: 2,
-                        value: Value::Literal(20)
-                    },
-                ]
+        decode(&hex_to_bits("38006F45291200")),
+        (
+            b"".as_slice(),
+            Packet {
+                version: 1,
+                value: Value::Operation {
+                    kind: 6,
+                    on: vec![
+                        Packet {
+                            version: 6,
+                            value: Value::Literal(10)
+                        },
+                        Packet {
+                            version: 2,
+                            value: Value::Literal(20)
+                        },
+                    ]
+                }
             }
-        }
+        )
     )
 }
 
