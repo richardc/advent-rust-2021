@@ -23,11 +23,7 @@ fn to_binary(c: char) -> &'static [u8] {
 }
 
 fn hex_to_bits(s: &str) -> Bytes {
-    Bytes::from(
-        s.chars()
-            .flat_map(to_binary).copied()
-            .collect::<Vec<u8>>(),
-    )
+    Bytes::from(s.chars().flat_map(to_binary).copied().collect::<Vec<u8>>())
 }
 
 #[test]
@@ -89,24 +85,23 @@ fn decode_operation(kind: u32, bits: &[u8]) -> (&[u8], Value) {
             (rem, packet) = decode_packet(rem);
             packets.push(packet);
         }
-        return (
-            rem,
-            Value::Operation {
-                kind,
-                on: packets,
-            },
-        );
-    } else {
-        let _count = decode_binary(&bits[1..12]);
-    }
 
-    (
-        bits,
-        Value::Operation {
-            kind,
-            on: vec![],
-        },
-    )
+        (
+            &bits[(16 + len as usize)..],
+            Value::Operation { kind, on: packets },
+        )
+    } else {
+        let count = decode_binary(&bits[1..12]);
+        let mut rem = &bits[12..];
+        let mut packets = vec![];
+        for _ in 0..count {
+            let packet: Packet;
+            (rem, packet) = decode_packet(rem);
+            packets.push(packet);
+        }
+
+        (rem, Value::Operation { kind, on: packets })
+    }
 }
 
 fn decode(bits: &[u8]) -> (&[u8], Packet) {
@@ -120,23 +115,11 @@ fn decode_packet(bits: &[u8]) -> (&[u8], Packet) {
     match packet_type {
         4 => {
             let (remainder, value) = decode_literal(&bits[6..]);
-            (
-                remainder,
-                Packet {
-                    version,
-                    value,
-                },
-            )
+            (remainder, Packet { version, value })
         }
         _ => {
             let (remainder, value) = decode_operation(packet_type, &bits[6..]);
-            (
-                remainder,
-                Packet {
-                    version,
-                    value,
-                },
-            )
+            (remainder, Packet { version, value })
         }
     }
 }
@@ -160,7 +143,7 @@ fn test_decode_packet_operator() {
     assert_eq!(
         decode(&hex_to_bits("38006F45291200")),
         (
-            b"".as_slice(),
+            b"0000000".as_slice(),
             Packet {
                 version: 1,
                 value: Value::Operation {
@@ -178,7 +161,34 @@ fn test_decode_packet_operator() {
                 }
             }
         )
-    )
+    );
+
+    assert_eq!(
+        decode(&hex_to_bits("EE00D40C823060")),
+        (
+            b"00000".as_slice(),
+            Packet {
+                version: 7,
+                value: Value::Operation {
+                    kind: 3,
+                    on: vec![
+                        Packet {
+                            version: 2,
+                            value: Value::Literal(1),
+                        },
+                        Packet {
+                            version: 4,
+                            value: Value::Literal(2)
+                        },
+                        Packet {
+                            version: 1,
+                            value: Value::Literal(3)
+                        },
+                    ],
+                }
+            }
+        )
+    );
 }
 
 fn main() {}
