@@ -33,13 +33,15 @@ fn test_hex_to_bits() {
     assert_eq!(hex_to_bits("D2FE28"), "110100101111111000101000");
 }
 
-#[derive(Debug, PartialEq)]
+type Number = u64;
+
+#[derive(Debug, PartialEq, Clone)]
 enum Value {
-    Literal(u32),
+    Literal(Number),
     Operation { kind: u32, on: Vec<Packet> },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Packet {
     version: u32,
     value: Value,
@@ -73,7 +75,7 @@ fn decode_literal(bits: &[u8]) -> (&[u8], Value) {
             break;
         }
     }
-    (&bits[used..], Value::Literal(value))
+    (&bits[used..], Value::Literal(value.into()))
 }
 
 fn decode_operation(kind: u32, bits: &[u8]) -> (&[u8], Value) {
@@ -213,8 +215,77 @@ fn test_sum_versions() {
     assert_eq!(sum_versions("A0016C880162017C3686B18A3D4780"), 31);
 }
 
+fn eval_list(on: &Vec<Packet>) -> impl Iterator<Item = Number> + '_ {
+    on.iter().map(|p| {
+        if let Value::Literal(v) = eval(p.value.clone()) {
+            v
+        } else {
+            0
+        }
+    })
+}
+
+fn eval(v: Value) -> Value {
+    match v {
+        Value::Literal(_) => v,
+        Value::Operation { kind, on, .. } => match kind {
+            // sum
+            0 => Value::Literal(eval_list(&on).sum()),
+            // product
+            1 => Value::Literal(eval_list(&on).product()),
+            // min
+            2 => Value::Literal(eval_list(&on).min().unwrap()),
+            // max
+            3 => Value::Literal(eval_list(&on).max().unwrap()),
+            // greater-than
+            5 => {
+                let mut values = eval_list(&on);
+                let first = values.next().unwrap();
+                let second = values.next().unwrap();
+                Value::Literal(if first > second { 1 } else { 0 })
+            }
+            // 6 => (), // less-than
+            6 => {
+                let mut values = eval_list(&on);
+                let first = values.next().unwrap();
+                let second = values.next().unwrap();
+                Value::Literal(if first < second { 1 } else { 0 })
+            }
+            // 7 => (), // equals
+            7 => {
+                let mut values = eval_list(&on);
+                let first = values.next().unwrap();
+                let second = values.next().unwrap();
+                Value::Literal(if first == second { 1 } else { 0 })
+            }
+            _ => unreachable!(),
+        },
+    }
+}
+
+fn eval_wrapped(s: &str) -> Number {
+    let (_, packet) = decode(&hex_to_bits(s));
+    if let Value::Literal(v) = eval(packet.value) {
+        return v;
+    }
+    unreachable!();
+}
+
+#[test]
+fn test_eval_wrapped() {
+    assert_eq!(eval_wrapped("C200B40A82"), 3);
+    assert_eq!(eval_wrapped("04005AC33890"), 54);
+    assert_eq!(eval_wrapped("880086C3E88112"), 7);
+    assert_eq!(eval_wrapped("CE00C43D881120"), 9);
+    assert_eq!(eval_wrapped("D8005AC2A8F0"), 1);
+    assert_eq!(eval_wrapped("F600BC2D8F"), 0);
+    assert_eq!(eval_wrapped("9C005AC2F8F0"), 0);
+    assert_eq!(eval_wrapped("9C0141080250320F1802104A08"), 1);
+}
+
 fn main() {
     let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
     let packet = &lines[0];
     println!("{}", sum_versions(&packet));
+    println!("{}", eval_wrapped(&packet));
 }
