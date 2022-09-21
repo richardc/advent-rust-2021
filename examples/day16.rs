@@ -25,9 +25,7 @@ fn to_binary(c: char) -> &'static [u8] {
 fn hex_to_bits(s: &str) -> Bytes {
     Bytes::from(
         s.chars()
-            .map(to_binary)
-            .flatten()
-            .map(|&x| x)
+            .flat_map(to_binary).copied()
             .collect::<Vec<u8>>(),
     )
 }
@@ -94,25 +92,25 @@ fn decode_operation(kind: u32, bits: &[u8]) -> (&[u8], Value) {
         return (
             rem,
             Value::Operation {
-                kind: kind,
+                kind,
                 on: packets,
             },
         );
     } else {
-        let count = decode_binary(&bits[1..12]);
+        let _count = decode_binary(&bits[1..12]);
     }
 
     (
         bits,
         Value::Operation {
-            kind: kind,
+            kind,
             on: vec![],
         },
     )
 }
 
 fn decode(bits: &[u8]) -> (&[u8], Packet) {
-    decode_packet(&bits)
+    decode_packet(bits)
 }
 
 fn decode_packet(bits: &[u8]) -> (&[u8], Packet) {
@@ -125,8 +123,8 @@ fn decode_packet(bits: &[u8]) -> (&[u8], Packet) {
             (
                 remainder,
                 Packet {
-                    version: version,
-                    value: value,
+                    version,
+                    value,
                 },
             )
         }
@@ -135,8 +133,8 @@ fn decode_packet(bits: &[u8]) -> (&[u8], Packet) {
             (
                 remainder,
                 Packet {
-                    version: version,
-                    value: value,
+                    version,
+                    value,
                 },
             )
         }
