@@ -84,13 +84,18 @@ fn decode_operation(kind: u32, bits: &[u8]) -> (&[u8], Value) {
     // length type id
     if bits[0] == b'0' {
         let len = decode_binary(&bits[1..16]);
-        dbg!(len);
-        let (rem, on) = decode_packet(&bits[16..(16 + len) as usize]);
+        let mut rem = &bits[16..(16 + len as usize)];
+        let mut packets = vec![];
+        while rem.len() > 6 {
+            let packet: Packet;
+            (rem, packet) = decode_packet(rem);
+            packets.push(packet);
+        }
         return (
             rem,
             Value::Operation {
                 kind: kind,
-                on: vec![on],
+                on: packets,
             },
         );
     } else {
@@ -143,7 +148,7 @@ fn test_decode_packet_literal() {
     assert_eq!(
         decode(&hex_to_bits("D2FE28")),
         (
-            b"000".as_slice(),
+            b"000".as_slice(), // unused padding
             Packet {
                 version: 6,
                 value: Value::Literal(2021)
