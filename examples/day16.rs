@@ -198,7 +198,7 @@ fn test_decode_packet_operator() {
 fn walk_versions(p: &Packet) -> u32 {
     match &p.value {
         Value::Literal(_) => p.version,
-        Value::Operation { on, .. } => p.version + &on.iter().map(|c| walk_versions(c)).sum(),
+        Value::Operation { on, .. } => p.version + &on.iter().map(walk_versions).sum(),
     }
 }
 
