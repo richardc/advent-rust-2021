@@ -1,3 +1,5 @@
+use std::io;
+
 use bytes::Bytes;
 
 fn to_binary(c: char) -> &'static [u8] {
@@ -191,4 +193,28 @@ fn test_decode_packet_operator() {
     );
 }
 
-fn main() {}
+fn walk_versions(p: &Packet) -> u32 {
+    match &p.value {
+        Value::Literal(_) => p.version,
+        Value::Operation { on, .. } => p.version + &on.iter().map(|c| walk_versions(c)).sum(),
+    }
+}
+
+fn sum_versions(s: &str) -> u32 {
+    let (_, packet) = decode(&hex_to_bits(s));
+    walk_versions(&packet)
+}
+
+#[test]
+fn test_sum_versions() {
+    assert_eq!(sum_versions("8A004A801A8002F478"), 16);
+    assert_eq!(sum_versions("620080001611562C8802118E34"), 12);
+    assert_eq!(sum_versions("C0015000016115A2E0802F182340"), 23);
+    assert_eq!(sum_versions("A0016C880162017C3686B18A3D4780"), 31);
+}
+
+fn main() {
+    let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
+    let packet = &lines[0];
+    println!("{}", sum_versions(&packet));
+}
