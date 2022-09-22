@@ -239,7 +239,21 @@ fn test_find_max_height() {
     assert_eq!(find_max_height(&target), 45);
 }
 
+fn count_firing_vectors(t: &Target) -> usize {
+    (0..1000)
+        .cartesian_product(-1000..1000)
+        .filter_map(|(x, y)| find_height(t, x, y))
+        .count()
+}
+
+#[test]
+fn test_count_firing_vectors() {
+    let target = Target::from(String::from("target area: x=20..30, y=-10..-5"));
+    assert_eq!(count_firing_vectors(&target), 112);
+}
+
 fn main() {
     let target = Target::from(io::stdin().lines().next().unwrap().unwrap());
     println!("{}", find_max_height(&target));
+    println!("{}", count_firing_vectors(&target));
 }
