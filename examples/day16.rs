@@ -220,7 +220,7 @@ fn eval_list(on: &[Packet]) -> impl Iterator<Item = Number> + '_ {
         if let Value::Literal(v) = eval(p.value.clone()) {
             v
         } else {
-            0
+            unreachable!()
         }
     })
 }
@@ -261,6 +261,64 @@ fn eval(v: Value) -> Value {
             _ => unreachable!(),
         },
     }
+}
+
+impl Packet {
+    fn literal(n: Number) -> Self {
+        Packet {
+            version: 42,
+            value: Value::Literal(n),
+        }
+    }
+}
+
+#[test]
+fn test_eval() {
+    assert_eq!(
+        eval(Value::Operation {
+            kind: 0,
+            on: vec![
+                Packet::literal(1),
+                Packet::literal(1),
+                Packet::literal(1),
+                Packet::literal(1)
+            ],
+        }),
+        Value::Literal(4),
+        "sum(1,1,1,1) == 4"
+    );
+
+    assert_eq!(
+        eval(Value::Operation {
+            kind: 0,
+            on: vec![Packet::literal(128)],
+        }),
+        Value::Literal(128),
+        "sum(128) == 128"
+    );
+
+    assert_eq!(
+        eval(Value::Operation {
+            kind: 1,
+            on: vec![
+                Packet::literal(2),
+                Packet::literal(3),
+                Packet::literal(4),
+                Packet::literal(5)
+            ]
+        }),
+        Value::Literal(120),
+        "product(2,3,4,5) == 120"
+    );
+
+    assert_eq!(
+        eval(Value::Operation {
+            kind: 2,
+            on: vec![Packet::literal(200)],
+        }),
+        Value::Literal(200),
+        "product(200) == 200"
+    );
 }
 
 fn eval_wrapped(s: &str) -> Number {
