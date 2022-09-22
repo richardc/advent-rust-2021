@@ -90,7 +90,7 @@ fn test_target_from() {
 
 impl Target {
     fn hit(&self, p: Point) -> bool {
-        p.x >= self.top_left.y
+        p.x >= self.top_left.x
             && p.y <= self.top_left.y
             && p.x <= self.bottom_right.x
             && p.y >= self.bottom_right.y
@@ -106,6 +106,7 @@ fn test_target_hit() {
     assert_eq!(target.hit(Point::new(20, -10)), true);
     assert_eq!(target.hit(Point::new(30, -10)), true);
     assert_eq!(target.hit(Point::new(0, 0)), false);
+    assert_eq!(target.hit(Point::new(0, -10)), false);
 }
 
 impl Target {
