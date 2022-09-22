@@ -1,5 +1,4 @@
-use std::cmp::{max, min};
-
+use itertools::Itertools;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -8,8 +7,10 @@ use nom::{
     sequence::{pair, preceded, separated_pair},
     IResult,
 };
+use std::cmp::{max, min};
+use std::io;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Point {
     x: i32,
     y: i32,
@@ -188,4 +189,56 @@ fn test_probe() {
     );
 }
 
-fn main() {}
+fn find_height(t: &Target, x: i32, y: i32) -> Option<i32> {
+    let mut probe = Probe::launch(x, y);
+    let mut max = 0;
+    loop {
+        if probe.p.y > max {
+            max = probe.p.y;
+        }
+
+        if t.hit(probe.p.clone()) {
+            return Some(max);
+        }
+
+        if t.missed(probe.p.clone()) {
+            return None;
+        }
+
+        probe.step();
+    }
+}
+
+#[test]
+fn test_find_height() {
+    let target = Target::from(String::from("target area: x=20..30, y=-10..-5"));
+
+    assert_eq!(find_height(&target, 17, -4), None);
+
+    assert_eq!(find_height(&target, 7, 2), Some(3));
+    assert_eq!(find_height(&target, 6, 3), Some(6));
+    assert_eq!(find_height(&target, 9, 0), Some(0));
+
+    assert_eq!(find_height(&target, 6, 9), Some(45));
+}
+
+// Probably woefully ineffienct to search such a wide space rather than
+// calculating some bounds relative to the target
+fn find_max_height(t: &Target) -> i32 {
+    (0..1000)
+        .cartesian_product(0..1000)
+        .filter_map(|(x, y)| find_height(t, x, y))
+        .max()
+        .unwrap()
+}
+
+#[test]
+fn test_find_max_height() {
+    let target = Target::from(String::from("target area: x=20..30, y=-10..-5"));
+    assert_eq!(find_max_height(&target), 45);
+}
+
+fn main() {
+    let target = Target::from(io::stdin().lines().next().unwrap().unwrap());
+    println!("{}", find_max_height(&target));
+}
