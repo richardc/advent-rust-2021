@@ -264,6 +264,7 @@ fn eval(v: Value) -> Value {
 }
 
 impl Packet {
+    #[allow(dead_code)] // used to construct eval tests
     fn literal(n: Number) -> Self {
         Packet {
             version: 42,
@@ -322,7 +323,9 @@ fn test_eval() {
 }
 
 fn eval_wrapped(s: &str) -> Number {
-    let (_, packet) = decode(&hex_to_bits(s));
+    let bits = hex_to_bits(s);
+    let (rem, packet) = decode(&bits);
+    assert!(rem.iter().all(|&c| c == b'0'), "Leftover unparsed!");
     if let Value::Literal(v) = eval(packet.value) {
         return v;
     }
