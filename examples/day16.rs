@@ -81,10 +81,12 @@ fn decode_literal(bits: &[u8]) -> (&[u8], Value) {
 fn decode_operation(kind: u32, bits: &[u8]) -> (&[u8], Value) {
     // length type id
     if bits[0] == b'0' {
+        // next 15 bits are a length, parse up to length worth of subpackets
         let len = decode_binary(&bits[1..16]);
         let mut rem = &bits[16..(16 + len as usize)];
         let mut packets = vec![];
-        while rem.len() > 6 {
+        // at least a version+kind+4 (smallest value) left to parse
+        while rem.len() > 10 {
             let packet: Packet;
             (rem, packet) = decode_packet(rem);
             packets.push(packet);
@@ -95,6 +97,7 @@ fn decode_operation(kind: u32, bits: &[u8]) -> (&[u8], Value) {
             Value::Operation { kind, on: packets },
         )
     } else {
+        // next 11 bits are a count, parse count subpackets
         let count = decode_binary(&bits[1..12]);
         let mut rem = &bits[12..];
         let mut packets = vec![];
