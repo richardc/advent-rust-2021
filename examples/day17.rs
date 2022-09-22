@@ -15,23 +15,16 @@ struct Point {
     y: i32,
 }
 
+impl Point {
+    fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 struct Target {
     top_left: Point,
     bottom_right: Point,
-}
-
-impl Target {
-    fn hit(&self, p: Point) -> bool {
-        p.x >= self.top_left.x
-            && p.x <= self.bottom_right.x
-            && p.y >= self.top_left.y
-            && p.y <= self.bottom_right.y
-    }
-
-    fn missed(&self, p: Point) -> bool {
-        p.x > self.bottom_right.x || p.y > self.bottom_right.y
-    }
 }
 
 fn parse_signed_number(input: &str) -> IResult<&str, i32> {
@@ -70,11 +63,11 @@ impl From<String> for Target {
             Target {
                 top_left: Point {
                     x: min(x1, x2),
-                    y: min(y1, y2),
+                    y: max(y1, y2),
                 },
                 bottom_right: Point {
                     x: max(x1, x2),
-                    y: max(y1, y2),
+                    y: min(y1, y2),
                 },
             }
         } else {
@@ -92,6 +85,42 @@ fn test_target_from() {
             bottom_right: Point { x: 30, y: -10 }
         }
     );
+}
+
+impl Target {
+    fn hit(&self, p: Point) -> bool {
+        p.x >= self.top_left.y
+            && p.y <= self.top_left.y
+            && p.x <= self.bottom_right.x
+            && p.y >= self.bottom_right.y
+    }
+}
+
+#[test]
+fn test_target_hit() {
+    let target = Target::from(String::from("target area: x=20..30, y=-10..-5"));
+
+    assert_eq!(target.hit(Point::new(20, -5)), true);
+    assert_eq!(target.hit(Point::new(30, -5)), true);
+    assert_eq!(target.hit(Point::new(20, -10)), true);
+    assert_eq!(target.hit(Point::new(30, -10)), true);
+    assert_eq!(target.hit(Point::new(0, 0)), false);
+}
+
+impl Target {
+    fn missed(&self, p: Point) -> bool {
+        p.x > self.bottom_right.x || p.y < self.bottom_right.y
+    }
+}
+
+#[test]
+fn test_target_missed() {
+    let target = Target::from(String::from("target area: x=20..30, y=-10..-5"));
+
+    assert_eq!(target.missed(Point::new(30, -10)), false);
+    assert_eq!(target.missed(Point::new(0, 0)), false);
+    assert_eq!(target.missed(Point::new(30, -11)), true);
+    assert_eq!(target.missed(Point::new(31, -10)), true);
 }
 
 #[derive(Debug, PartialEq)]
