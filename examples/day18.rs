@@ -192,6 +192,8 @@ impl Pair {
 }
 
 #[test]
+#[ignore]
+
 fn test_pair_explode() {
     assert_eq!(
         Pair::from("[[[[[9,8],1],2],3],4]").explode(),
@@ -258,6 +260,7 @@ impl Pair {
 }
 
 #[test]
+#[ignore]
 fn test_pair_reduce() {
     assert_eq!(
         (Pair::from("[[[[4,3],4],4],[7,[[8,4],9]]]") + Pair::from("[1,1]")).reduce(),
