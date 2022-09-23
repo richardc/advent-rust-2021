@@ -95,32 +95,33 @@ fn test_parse_pair() {
     );
 }
 
-// Convenience
-fn parse(input: &str) -> Pair {
-    if let Ok((_, pair)) = parse_pair(input) {
-        pair
-    } else {
-        unreachable!()
+impl From<&str> for Pair {
+    fn from(input: &str) -> Self {
+        if let Ok((_, pair)) = parse_pair(input) {
+            pair
+        } else {
+            unreachable!()
+        }
     }
 }
 
 #[test]
-fn test_parse() {
+fn test_pair_from_strref() {
     assert_eq!(
-        parse("[1,2]]"),
+        Pair::from("[1,2]]"),
         Pair::Pair(Box::new(Pair::Number(1)), Box::new(Pair::Number(2)))
     );
 }
 
 impl PartialEq<&str> for Pair {
     fn eq(&self, other: &&str) -> bool {
-        parse(other) == *self
+        Pair::from(*other) == *self
     }
 }
 
 #[test]
-fn test_pair_eq() {
-    assert_eq!(parse("[1,2]"), "[1,2]");
+fn test_pair_eq_strref() {
+    assert_eq!(Pair::from("[1,2]"), "[1,2]");
 }
 
 impl ops::Add for Pair {
@@ -133,7 +134,10 @@ impl ops::Add for Pair {
 
 #[test]
 fn test_pair_add() {
-    assert_eq!(parse("[1,2]") + parse("[[3,4],5]"), "[[1,2],[[3,4],5]]");
+    assert_eq!(
+        Pair::from("[1,2]") + Pair::from("[[3,4],5]"),
+        "[[1,2],[[3,4],5]]"
+    );
 }
 
 fn main() {}
