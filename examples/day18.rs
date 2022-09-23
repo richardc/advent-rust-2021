@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, ops};
 
 use nom::{
     branch::alt,
@@ -93,6 +93,47 @@ fn test_parse_pair() {
         )),
         parse_pair("[2,[3,4]]")
     );
+}
+
+// Convenience
+fn parse(input: &str) -> Pair {
+    if let Ok((_, pair)) = parse_pair(input) {
+        pair
+    } else {
+        unreachable!()
+    }
+}
+
+#[test]
+fn test_parse() {
+    assert_eq!(
+        parse("[1,2]]"),
+        Pair::Pair(Box::new(Pair::Number(1)), Box::new(Pair::Number(2)))
+    );
+}
+
+impl PartialEq<&str> for Pair {
+    fn eq(&self, other: &&str) -> bool {
+        parse(other) == *self
+    }
+}
+
+#[test]
+fn test_pair_eq() {
+    assert_eq!(parse("[1,2]"), "[1,2]");
+}
+
+impl ops::Add for Pair {
+    type Output = Pair;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Pair::Pair(Box::new(self), Box::new(rhs))
+    }
+}
+
+#[test]
+fn test_pair_add() {
+    assert_eq!(parse("[1,2]") + parse("[[3,4],5]"), "[[1,2],[[3,4],5]]");
 }
 
 fn main() {}
