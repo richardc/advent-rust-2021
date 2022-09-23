@@ -1,4 +1,4 @@
-use std::{fmt, ops};
+use std::{fmt, mem::swap, ops, sync::atomic::AtomicBool};
 
 use nom::{
     branch::alt,
@@ -21,6 +21,16 @@ impl fmt::Display for Pair {
         match self {
             Pair::Number(v) => write!(f, "{}", v),
             Pair::Pair(left, right) => write!(f, "[{},{}]", left, right),
+        }
+    }
+}
+
+impl Pair {
+    fn value(&self) -> Number {
+        if let Pair::Number(v) = self {
+            *v
+        } else {
+            unreachable!()
         }
     }
 }
@@ -140,9 +150,44 @@ fn test_pair_add() {
     );
 }
 
+fn explode_inner(d: i32, exploded: &mut AtomicBool, pair: Pair) -> Pair {
+    match pair {
+        Pair::Pair(left, right) => {
+            if d == 3 && !*exploded.get_mut() {
+                if let Pair::Pair(_, r) = *left {
+                    println!("left explode {} {}", right, r);
+
+                    *exploded.get_mut() = true;
+                    Pair::Pair(
+                        Box::new(Pair::Number(0)),
+                        Box::new(Pair::Number(r.value() + right.value())),
+                    )
+                } else if let Pair::Pair(l, _) = *right {
+                    println!("right explode {} {}", left, l);
+
+                    *exploded.get_mut() = true;
+                    Pair::Pair(
+                        Box::new(Pair::Number(l.value() + left.value())),
+                        Box::new(Pair::Number(0)),
+                    )
+                } else {
+                    println!("third explode");
+                    Pair::Pair(left, right)
+                }
+            } else {
+                Pair::Pair(
+                    Box::new(explode_inner(d + 1, exploded, *left)),
+                    Box::new(explode_inner(d + 1, exploded, *right)),
+                )
+            }
+        }
+        _ => pair,
+    }
+}
+
 impl Pair {
     fn explode(self) -> Self {
-        self
+        explode_inner(0, &mut AtomicBool::new(false), self)
     }
 }
 
