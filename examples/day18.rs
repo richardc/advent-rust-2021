@@ -1,3 +1,10 @@
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    character::complete::{char, digit1},
+    sequence::{delimited, separated_pair},
+    IResult,
+};
 use regex::{Captures, Regex};
 
 fn add(lhs: &str, rhs: &str) -> String {
@@ -163,6 +170,63 @@ fn test_add_set() {
             "[[[[4,2],2],6],[8,7]]"
         ]),
         "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
+    );
+}
+
+fn magnitude(s: &str) -> u64 {
+    type Number = u64;
+    enum Pair {
+        Value(Number),
+        Pair(Box<Pair>, Box<Pair>),
+    }
+
+    fn parse_number(input: &str) -> IResult<&str, Pair> {
+        let (input, value) = digit1(input)?;
+
+        Ok((input, Pair::Value(value.parse::<Number>().unwrap())))
+    }
+
+    fn parse_pair(input: &str) -> IResult<&str, Pair> {
+        let (input, (left, right)) = delimited(
+            char('['),
+            separated_pair(
+                alt((parse_number, parse_pair)),
+                tag(","),
+                alt((parse_number, parse_pair)),
+            ),
+            char(']'),
+        )(input)?;
+
+        Ok((input, Pair::Pair(Box::new(left), Box::new(right))))
+    }
+
+    fn value(p: Pair) -> Number {
+        match p {
+            Pair::Value(v) => v,
+            Pair::Pair(l, r) => 3 * value(*l) + 2 * value(*r),
+        }
+    }
+
+    if let Ok((_, tree)) = parse_pair(s) {
+        value(tree)
+    } else {
+        0
+    }
+}
+
+#[test]
+fn test_magnitude() {
+    assert_eq!(magnitude("[9,1]"), 29);
+    assert_eq!(magnitude("[1,9]"), 21);
+    assert_eq!(magnitude("[[9,1],[1,9]]"), 129);
+    assert_eq!(magnitude("[[1,2],[[3,4],5]]"), 143);
+    assert_eq!(magnitude("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"), 1384);
+    assert_eq!(magnitude("[[[[1,1],[2,2]],[3,3]],[4,4]]"), 445);
+    assert_eq!(magnitude("[[[[3,0],[5,3]],[4,4]],[5,5]]"), 791);
+    assert_eq!(magnitude("[[[[5,0],[7,4]],[5,5]],[6,6]]"), 1137);
+    assert_eq!(
+        magnitude("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"),
+        3488
     );
 }
 
