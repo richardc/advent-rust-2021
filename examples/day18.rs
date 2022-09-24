@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use nom::{
     branch::alt,
@@ -7,6 +8,7 @@ use nom::{
     IResult,
 };
 use regex::{Captures, Regex};
+use std::io;
 
 fn add(lhs: &str, rhs: &str) -> String {
     format!("[{},{}]", lhs, rhs)
@@ -235,4 +237,8 @@ fn test_magnitude() {
     );
 }
 
-fn main() {}
+fn main() {
+    let lines = io::stdin().lines().map(|s| s.unwrap()).collect_vec();
+    let slices = lines.iter().map(|s| s.as_str()).collect_vec();
+    println!("{}", magnitude(&add_set(&slices)));
+}
