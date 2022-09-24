@@ -237,8 +237,17 @@ fn test_magnitude() {
     );
 }
 
+fn topscore(s: &[&str]) -> u64 {
+    s.into_iter()
+        .permutations(2)
+        .map(|v| magnitude(&reduce(&add(v[0], v[1]))))
+        .max()
+        .unwrap()
+}
+
 fn main() {
     let lines = io::stdin().lines().map(|s| s.unwrap()).collect_vec();
     let slices = lines.iter().map(|s| s.as_str()).collect_vec();
     println!("{}", magnitude(&add_set(&slices)));
+    println!("{}", topscore(&slices));
 }
