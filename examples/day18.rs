@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -70,15 +71,19 @@ fn explode(s: &str) -> String {
         let vr = vr.parse::<i32>().unwrap();
 
         // replace rightmost number with its value plus the right value of the exploding pair
-        let re = Regex::new(r"\d+").unwrap();
-        let right = re.replace(right, |c: &Captures| {
+        lazy_static! {
+            static ref RIGHT_RE: Regex = Regex::new(r"\d+").unwrap();
+        }
+        let right = RIGHT_RE.replace(right, |c: &Captures| {
             let val = c.get(0).unwrap().as_str().parse::<i32>().unwrap();
             format!("{}", val + vr)
         });
 
         // like replacing on the right, but we must match from the end
-        let re = Regex::new(r"(\d+)([^\d]*)\z").unwrap();
-        let left = re.replace(left, |c: &Captures| {
+        lazy_static! {
+            static ref LEFT_RE: Regex = Regex::new(r"(\d+)([^\d]*)\z").unwrap();
+        }
+        let left = LEFT_RE.replace(left, |c: &Captures| {
             let val = c.get(1).unwrap().as_str().parse::<i32>().unwrap();
             format!("{}{}", val + vl, c.get(2).unwrap().as_str())
         });
