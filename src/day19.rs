@@ -18,6 +18,12 @@ impl From<&str> for Point {
     }
 }
 
+impl Point {
+    fn new(x: i32, y: i32, z: i32) -> Self {
+        Self { x, y, z }
+    }
+}
+
 #[derive(Default)]
 struct Scanner {
     probes: Vec<Point>,
@@ -56,6 +62,50 @@ fn test_generate() {
             y: -588,
             z: -901
         }
+    );
+}
+
+impl Scanner {
+    fn get_orientations(&self) -> Vec<Vec<Point>> {
+        // Turn to face a direction, 6 of
+        let facings: &[fn(&Point) -> Point] = &[
+            |&Point { x, y, z }| Point::new(x, y, z),
+            |&Point { x, y, z }| Point::new(y, -x, z),
+            |&Point { x, y, z }| Point::new(-x, -y, z),
+            |&Point { x, y, z }| Point::new(-y, x, z),
+            |&Point { x, y, z }| Point::new(y, z, x),
+            |&Point { x, y, z }| Point::new(y, -z, -x),
+        ];
+
+        // Rotate to find 'up', 4 of
+        let rotations: &[fn(&Point) -> Point] = &[
+            |&Point { x, y, z }| Point::new(x, y, z),
+            |&Point { x, y, z }| Point::new(x, -z, y),
+            |&Point { x, y, z }| Point::new(x, -y, -z),
+            |&Point { x, y, z }| Point::new(x, z, -y),
+        ];
+
+        rotations
+            .iter()
+            .cartesian_product(facings)
+            .map(|(face, rotate)| self.probes.iter().map(|p| rotate(&face(p))).collect_vec())
+            .collect_vec()
+    }
+}
+
+#[test]
+fn test_rotations() {
+    let scanners = generate(include_str!("day19_small_example.txt"));
+    let permutations = scanners[0].get_orientations();
+    assert_eq!(permutations.len(), 24);
+    assert_eq!(permutations[0], scanners[0].probes);
+    assert_eq!(permutations.iter().any(|p| *p == scanners[1].probes), true);
+
+    assert_eq!(
+        scanners
+            .iter()
+            .all(|scanner| permutations.iter().any(|p| *p == scanner.probes)),
+        true
     );
 }
 
