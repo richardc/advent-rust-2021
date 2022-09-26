@@ -19,8 +19,11 @@ fn test_add() {
 }
 
 fn split(s: &str) -> String {
-    let re = Regex::new(r"\d{2,}").unwrap();
-    if let Some(m) = re.find(&s) {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\d{2,}").unwrap();
+    }
+
+    if let Some(m) = RE.find(&s) {
         let left = &s[0..m.start()];
         let num = m.as_str().parse::<i32>().unwrap();
         let right = &s[m.end()..];
