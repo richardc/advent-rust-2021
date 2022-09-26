@@ -40,7 +40,7 @@ fn test_battery() {
     assert_eq!(battery(&generate(EXAMPLE)), 198);
 }
 
-fn bitcount(lines: &Vec<String>, column: usize) -> i32 {
+fn bitcount(lines: &[String], column: usize) -> i32 {
     lines
         .iter()
         .filter(|s| matches!(s.chars().nth(column), Some(c) if c == '1'))
