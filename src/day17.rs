@@ -143,11 +143,7 @@ impl Probe {
         self.p.x += self.v.x;
         self.p.y += self.v.y;
 
-        if self.v.x > 0 {
-            self.v.x -= 1;
-        } else if self.v.x < 0 {
-            self.v.x += 1
-        }
+        self.v.x -= self.v.x.signum();
         self.v.y -= 1;
     }
 }
