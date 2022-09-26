@@ -53,10 +53,12 @@ fn test_example() {
     assert_eq!(run(parse(String::from("3,4,3,1,2")), 256), 26984457539);
 }
 
-use std::io;
+#[aoc(day6, part1)]
+fn eighty_days(input: &str) -> Count {
+    run(parse(input.to_string()), 80)
+}
 
-fn main() {
-    let start = io::stdin().lines().next().unwrap().unwrap();
-    println!("{}", run(parse(start.clone()), 80));
-    println!("{}", run(parse(start), 256));
+#[aoc(day6, part2)]
+fn more_days(input: &str) -> Count {
+    run(parse(input.to_string()), 256)
 }

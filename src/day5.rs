@@ -1,3 +1,8 @@
+#[aoc_generator(day5)]
+fn generate(input: &str) -> Vec<String> {
+    input.lines().map(|s| s.to_string()).collect::<Vec<_>>()
+}
+
 #[derive(Default, Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct Point {
     x: u32,
@@ -171,10 +176,12 @@ fn highway_to_the_danger_zones(lines: &[String], points: fn(Edge) -> Vec<Point>)
     points.values().filter(|p| **p >= 2).count() as u32
 }
 
+#[aoc(day5, part1)]
 fn danger_zones(lines: &[String]) -> u32 {
     highway_to_the_danger_zones(lines, |e| e.points())
 }
 
+#[aoc(day5, part2)]
 fn diagonal_danger_zones(lines: &[String]) -> u32 {
     highway_to_the_danger_zones(lines, |e| e.diagonal_points())
 }
@@ -201,12 +208,4 @@ fn test_danger_zones() {
 
     assert_eq!(danger_zones(&lines), 5);
     assert_eq!(diagonal_danger_zones(&lines), 12);
-}
-
-use std::io;
-
-fn main() {
-    let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
-    println!("{}", danger_zones(&lines));
-    println!("{}", diagonal_danger_zones(&lines));
 }

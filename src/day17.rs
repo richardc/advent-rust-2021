@@ -8,7 +8,6 @@ use nom::{
     IResult,
 };
 use std::cmp::{max, min};
-use std::io;
 
 #[derive(Debug, PartialEq, Clone)]
 struct Point {
@@ -16,6 +15,7 @@ struct Point {
     y: i32,
 }
 
+#[cfg(test)]
 impl Point {
     fn new(x: i32, y: i32) -> Self {
         Self { x, y }
@@ -223,8 +223,14 @@ fn test_find_height() {
     assert_eq!(find_height(&target, 6, 9), Some(45));
 }
 
+#[aoc_generator(day17)]
+fn generate(input: &str) -> Target {
+    Target::from(String::from(input))
+}
+
 // Probably woefully ineffienct to search such a wide space rather than
 // calculating some bounds relative to the target
+#[aoc(day17, part1)]
 fn find_max_height(t: &Target) -> i32 {
     (0..1000)
         .cartesian_product(0..1000)
@@ -239,6 +245,7 @@ fn test_find_max_height() {
     assert_eq!(find_max_height(&target), 45);
 }
 
+#[aoc(day17, part2)]
 fn count_firing_vectors(t: &Target) -> usize {
     (0..1000)
         .cartesian_product(-1000..1000)
@@ -250,10 +257,4 @@ fn count_firing_vectors(t: &Target) -> usize {
 fn test_count_firing_vectors() {
     let target = Target::from(String::from("target area: x=20..30, y=-10..-5"));
     assert_eq!(count_firing_vectors(&target), 112);
-}
-
-fn main() {
-    let target = Target::from(io::stdin().lines().next().unwrap().unwrap());
-    println!("{}", find_max_height(&target));
-    println!("{}", count_firing_vectors(&target));
 }

@@ -1,10 +1,15 @@
+#[aoc_generator(day4)]
+fn generate(input: &str) -> Game {
+    Game::from(input.lines().map(|s| s.to_string()).collect::<Vec<_>>())
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum Value {
     Matched(u32),
     Unmatched(u32),
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct Board {
     rows: Vec<Vec<Value>>,
 }
@@ -93,6 +98,7 @@ fn test_board() {
     assert_eq!(board.score(), 4);
 }
 
+#[derive(Clone)]
 struct Game {
     numbers: Vec<u32>,
     boards: Vec<Board>,
@@ -157,36 +163,8 @@ impl Game {
 
 #[test]
 fn test_bingo() {
-    let example = r#"
-7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1
-
-22 13 17 11  0
- 8  2 23  4 24
-21  9 14 16  7
- 6 10  3 18  5
- 1 12 20 15 19
-
- 3 15  0  2 22
- 9 18 13 17  5
-19  8  7 25 23
-20 11 10 24  4
-14 21 16 12  6
-
-14 21 17 24  4
-10 16 15  9 19
-18  8 23 26 20
-22 11 13  6  5
- 2  0 12  3  7
-"#;
-
-    let mut game = Game::from(
-        example
-            .to_string()
-            .split('\n')
-            .skip(1)
-            .map(|x| x.to_string())
-            .collect::<Vec<_>>(),
-    );
+    let example = include_str!("day4_example.txt");
+    let mut game = generate(example);
 
     assert_eq!(game.boards.len(), 3);
     assert_eq!(game.boards[0].rows[0][0], Value::Unmatched(22));
@@ -195,15 +173,14 @@ fn test_bingo() {
     assert_eq!(game.losing_score(), 1924);
 }
 
-use std::io;
+#[aoc(day4, part1)]
+fn winner(bingo: &Game) -> u32 {
+    let mut g = (*bingo).clone();
+    g.winning_score()
+}
 
-fn main() {
-    //  Curious how much overhead is in the enum type for our simple u32 value:
-    // dbg!(std::mem::size_of::<Value>());
-    // dbg!(std::mem::size_of::<&Value>());
-    // on a 64-bit system both are 8 bytes
-
-    let mut bingo = Game::from(io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>());
-    println!("{}", bingo.winning_score());
-    println!("{}", bingo.losing_score());
+#[aoc(day4, part2)]
+fn loser(bingo: &Game) -> u32 {
+    let mut g = (*bingo).clone();
+    g.losing_score()
 }

@@ -42,7 +42,7 @@ fn test_point_folding() {
     assert_eq!(Point(5, 11).fold_x(3), Point(1, 11));
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Puzzle {
     points: Vec<Point>,
     commands: Vec<String>,
@@ -148,24 +148,22 @@ fold along x=5
     assert_eq!(puzzle.points.len(), 16);
 }
 
-use std::io;
+#[aoc_generator(day13)]
+fn generate(input: &str) -> Puzzle {
+    Puzzle::from(input.lines().collect_vec())
+}
 
-fn step1(input: Vec<&str>) -> usize {
-    let mut puzzle = Puzzle::from(input);
+#[aoc(day13, part1)]
+fn step1(puzzle: &Puzzle) -> usize {
+    let mut puzzle = (*puzzle).clone();
     puzzle.apply_command(0);
     puzzle.points.len()
 }
 
-fn step2(input: Vec<&str>) {
-    let mut puzzle = Puzzle::from(input);
+#[aoc(day13, part2)]
+fn step2(puzzle: &Puzzle) -> String {
+    let mut puzzle = (*puzzle).clone();
     puzzle.apply_commands();
     puzzle.print();
-}
-
-fn main() {
-    let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
-    let input = lines.iter().map(|x| x.as_str()).collect::<Vec<_>>();
-
-    println!("{}", step1(input.clone()));
-    step2(input);
+    String::from("")
 }

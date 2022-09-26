@@ -5,6 +5,14 @@ enum Command {
     Err,
 }
 
+#[aoc_generator(day2)]
+fn generate(input: &str) -> Vec<Command> {
+    input
+        .lines()
+        .map(|l| Command::from(l.to_string()))
+        .collect()
+}
+
 impl From<String> for Command {
     fn from(command: String) -> Self {
         if let Some((verb, distance)) = command.split_once(' ') {
@@ -21,13 +29,13 @@ impl From<String> for Command {
     }
 }
 
-#[allow(dead_code)]
-fn position(commands: Vec<String>) -> i32 {
+#[aoc(day2, part1)]
+fn position(commands: &[Command]) -> i32 {
     let mut horizontal = 0;
     let mut depth = 0;
 
     for command in commands {
-        match Command::from(command) {
+        match command {
             Command::Forward(x) => horizontal += x,
             Command::Up(d) => depth -= d,
             Command::Down(d) => depth += d,
@@ -38,33 +46,22 @@ fn position(commands: Vec<String>) -> i32 {
     horizontal * depth
 }
 
+#[cfg(test)]
+const EXAMPLE: &str = include_str!("day2_example1.txt");
+
 #[test]
 fn test_position() {
-    assert_eq!(
-        position(
-            vec![
-                "forward 5",
-                "down 5",
-                "forward 8",
-                "up 3",
-                "down 8",
-                "forward 2"
-            ]
-            .iter()
-            .map(|s| s.to_string())
-            .collect()
-        ),
-        150
-    );
+    assert_eq!(position(&generate(EXAMPLE)), 150);
 }
 
-fn position_aimed(commands: Vec<String>) -> i32 {
+#[aoc(day2, part2)]
+fn position_aimed(commands: &[Command]) -> i32 {
     let mut horizontal = 0;
     let mut depth = 0;
     let mut aim = 0;
 
     for command in commands {
-        match Command::from(command) {
+        match command {
             Command::Forward(x) => {
                 horizontal += x;
                 depth += aim * x;
@@ -80,27 +77,5 @@ fn position_aimed(commands: Vec<String>) -> i32 {
 
 #[test]
 fn test_position_aimed() {
-    assert_eq!(
-        position_aimed(
-            vec![
-                "forward 5",
-                "down 5",
-                "forward 8",
-                "up 3",
-                "down 8",
-                "forward 2"
-            ]
-            .iter()
-            .map(|s| s.to_string())
-            .collect()
-        ),
-        900
-    );
-}
-
-use std::io;
-
-fn main() {
-    let directions: Vec<_> = io::stdin().lines().map(|s| s.unwrap()).collect();
-    println!("{}", position_aimed(directions));
+    assert_eq!(position_aimed(&generate(EXAMPLE)), 900);
 }

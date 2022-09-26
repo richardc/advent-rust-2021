@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 #[derive(Debug, PartialEq)]
 enum Validation {
     Ok,
@@ -72,8 +74,14 @@ fn test_score_invalid() {
     assert_eq!(score_invalid("<>"), 0);
 }
 
-fn syntax_score(lines: &[&str]) -> u32 {
-    lines.iter().map(|&s| score_invalid(s)).sum()
+#[aoc_generator(day10)]
+fn generate(input: &str) -> Vec<String> {
+    input.lines().map(|s| s.to_string()).collect()
+}
+
+#[aoc(day10, part1)]
+fn syntax_score(lines: &[String]) -> u32 {
+    lines.iter().map(|s| score_invalid(s)).sum()
 }
 
 #[test]
@@ -91,8 +99,7 @@ fn test_syntax_score() {
 <{([{{}}[<[[[<>{}]]]>[]]
 "#;
 
-    let lines = example.trim().split('\n').collect::<Vec<_>>();
-    assert_eq!(syntax_score(&lines), 26397);
+    assert_eq!(syntax_score(&generate(example.trim())), 26397);
 }
 
 fn score_autocomplete(s: &str) -> u64 {
@@ -117,7 +124,8 @@ fn test_score_autocomplete() {
     assert_eq!(score_autocomplete("[(()[<>])]({[<{<<[]>>("), 5566);
 }
 
-fn score_auto_many(lines: &[&str]) -> u64 {
+#[aoc(day10, part2)]
+fn score_auto_many(lines: &[String]) -> u64 {
     let scored = lines
         .iter()
         .map(|s| score_autocomplete(s))
@@ -142,19 +150,5 @@ fn test_score_auto_many() {
 <{([{{}}[<[[[<>{}]]]>[]]
 "#;
 
-    let lines = example.trim().split('\n').collect::<Vec<_>>();
-    assert_eq!(score_auto_many(&lines), 288957);
-}
-
-use std::io;
-
-use itertools::Itertools;
-
-fn main() {
-    let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
-    let input = lines.iter().map(|x| x.as_str()).collect::<Vec<_>>();
-    let slice: &[&str] = &input;
-
-    println!("{}", syntax_score(slice));
-    println!("{}", score_auto_many(slice));
+    assert_eq!(score_auto_many(&generate(example.trim())), 288957);
 }

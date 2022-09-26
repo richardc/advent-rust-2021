@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-use std::io;
-
 use itertools::Itertools;
+use std::collections::HashMap;
 
 #[derive(Default, Debug)]
 struct Map {
@@ -141,12 +139,17 @@ start-RW
     assert_eq!(map.count_paths_advanced(), 3509);
 }
 
-fn main() {
-    let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
-    let input = lines.iter().map(|x| x.as_str()).collect::<Vec<_>>();
+#[aoc_generator(day12)]
+fn generate(input: &str) -> Map {
+    Map::from(input.lines().collect_vec())
+}
 
-    let map = Map::from(input);
+#[aoc(day12, part1)]
+fn count_paths(map: &Map) -> usize {
+    map.count_paths()
+}
 
-    println!("{}", map.count_paths());
-    println!("{}", map.count_paths_advanced());
+#[aoc(day12, part2)]
+fn count_paths_advanced(map: &Map) -> usize {
+    map.count_paths_advanced()
 }

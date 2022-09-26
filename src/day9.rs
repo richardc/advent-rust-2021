@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 #[derive(Debug)]
 struct Heightmap {
     map: Vec<Vec<u8>>,
@@ -91,20 +93,23 @@ fn test_low_points() {
 9899965678
 "#;
 
-    let input = example.trim().split('\n').collect::<Vec<_>>();
-    let slice: &[&str] = &input;
-    let map = Heightmap::from(slice);
+    let map = generate(example.trim());
     assert_eq!(map.low_points(), [1, 0, 5, 5]);
     assert_eq!(risk_level(&map), 15);
     assert_eq!(map.basin_sizes(), [3, 9, 14, 9]);
 }
 
+#[aoc_generator(day9)]
+fn generate(input: &str) -> Heightmap {
+    Heightmap::from(input.lines().collect_vec().as_slice())
+}
+
+#[aoc(day9, part1)]
 fn risk_level(heightmap: &Heightmap) -> u32 {
     heightmap.low_points().iter().map(|&x| x as u32 + 1).sum()
 }
 
-use itertools::Itertools;
-
+#[aoc(day9, part2)]
 fn biggest_basins(map: &Heightmap) -> u32 {
     map.basin_sizes()
         .into_iter()
@@ -112,16 +117,4 @@ fn biggest_basins(map: &Heightmap) -> u32 {
         .rev()
         .take(3)
         .product()
-}
-
-use std::io;
-
-fn main() {
-    let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
-    let input = lines.iter().map(|x| x.as_str()).collect::<Vec<_>>();
-    let slice: &[&str] = &input;
-
-    let map = Heightmap::from(slice);
-    println!("{}", risk_level(&map));
-    println!("{}", biggest_basins(&map));
 }

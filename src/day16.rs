@@ -1,5 +1,3 @@
-use std::io;
-
 use bytes::Bytes;
 
 fn to_binary(c: char) -> &'static [u8] {
@@ -201,10 +199,11 @@ fn test_decode_packet_operator() {
 fn walk_versions(p: &Packet) -> u32 {
     match &p.value {
         Value::Literal(_) => p.version,
-        Value::Operation { on, .. } => p.version + &on.iter().map(walk_versions).sum(),
+        Value::Operation { on, .. } => p.version + on.iter().map(walk_versions).sum::<u32>(),
     }
 }
 
+#[aoc(day16, part1)]
 fn sum_versions(s: &str) -> u32 {
     let (_, packet) = decode(&hex_to_bits(s));
     walk_versions(&packet)
@@ -325,6 +324,7 @@ fn test_eval() {
     );
 }
 
+#[aoc(day16, part2)]
 fn eval_wrapped(s: &str) -> Number {
     let bits = hex_to_bits(s);
     let (rem, packet) = decode(&bits);
@@ -349,11 +349,4 @@ fn test_eval_wrapped() {
         1,
         "(1 + 3) == (2 * 2)"
     );
-}
-
-fn main() {
-    let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
-    let packet = &lines[0];
-    println!("{}", sum_versions(packet));
-    println!("{}", eval_wrapped(packet));
 }

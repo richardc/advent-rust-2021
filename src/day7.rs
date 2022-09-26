@@ -69,15 +69,20 @@ fn test_real_cost() {
     assert_eq!(real_cost(&example, 5), 168);
 }
 
-use std::io;
-
-fn main() {
-    let str = io::stdin().lines().next().unwrap().unwrap();
-    let data = str
-        .trim()
+#[aoc_generator(day7)]
+fn generate(input: &str) -> Vec<Pos> {
+    input
         .split(',')
         .map(|s| s.parse::<Pos>().unwrap())
-        .collect::<Vec<_>>();
-    println!("{}", cheapest(&data, cost));
-    println!("{}", cheapest(&data, real_cost));
+        .collect::<Vec<_>>()
+}
+
+#[aoc(day7, part1)]
+fn part1(input: &[Pos]) -> Pos {
+    cheapest(input, cost)
+}
+
+#[aoc(day7, part2)]
+fn part2(input: &[Pos]) -> Pos {
+    cheapest(input, real_cost)
 }

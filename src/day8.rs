@@ -1,3 +1,8 @@
+#[aoc_generator(day8)]
+fn generate(input: &str) -> Vec<String> {
+    input.lines().map(|s| s.to_string()).collect()
+}
+
 type Digit = u8;
 
 enum Output {
@@ -17,7 +22,8 @@ fn output_is(s: &str) -> Output {
     }
 }
 
-fn known_outputs(input: &[&str]) -> usize {
+#[aoc(day8, part1)]
+fn known_outputs(input: &[String]) -> usize {
     input
         .iter()
         .flat_map(|l| match l.split_once('|') {
@@ -42,13 +48,9 @@ dbcfg fgd bdegcaf fgec aegbdf ecdfab fbedc dacgb gdcebf gf | cefg dcbef fcge gbc
 bdfegc cbegaf gecbf dfcage bdacg ed bedf ced adcbefg gebcd | ed bcgafe cdgba cbgef
 egadfb cdbfeg cegd fecab cgb gbdefca cg fgcdab egfdb bfceg | gbdfcae bgc cg cgb
 gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
-"#
-    .trim();
+"#;
 
-    assert_eq!(
-        known_outputs(&(example.split('\n').collect::<Vec<_>>())),
-        26
-    );
+    assert_eq!(known_outputs(&generate(example.trim())), 26);
 }
 
 fn decode_segments(s: &str) -> u32 {
@@ -80,10 +82,6 @@ fn decode_segments(s: &str) -> u32 {
         .fold(0, |acc, x| acc * 10 + x)
 }
 
-fn decode_all_segments(input: &[&str]) -> u32 {
-    input.iter().map(|&s| decode_segments(s)).sum()
-}
-
 #[test]
 fn test_decode_segments() {
     let example =
@@ -92,10 +90,7 @@ fn test_decode_segments() {
     assert_eq!(decode_segments(example), 5353);
 }
 
-use std::io;
-fn main() {
-    let lines = io::stdin().lines().map(|s| s.unwrap()).collect::<Vec<_>>();
-    let input = lines.iter().map(|x| x.as_str()).collect::<Vec<_>>();
-    println!("{}", known_outputs(&input));
-    println!("{}", decode_all_segments(&input));
+#[aoc(day8, part2)]
+fn decode_all_segments(input: &[String]) -> u32 {
+    input.iter().map(|s| decode_segments(s)).sum()
 }

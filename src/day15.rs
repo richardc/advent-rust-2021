@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use ndarray::prelude::*;
-use std::{cmp::Ordering, collections::BinaryHeap, io};
+use std::{cmp::Ordering, collections::BinaryHeap};
 
 #[derive(Debug)]
 struct Puzzle {
@@ -227,10 +227,17 @@ fn test_puzzle_embiggen() {
     );
 }
 
-fn main() {
-    let lines = io::stdin().lines().map(|s| s.unwrap());
-    let puzzle = Puzzle::from_iter(lines);
+#[aoc_generator(day15)]
+fn generate(input: &str) -> Puzzle {
+    Puzzle::from_iter(input.lines().map(|x| x.to_string()))
+}
 
-    println!("{}", puzzle.shortest_path());
-    println!("{}", puzzle.embiggen().shortest_path());
+#[aoc(day15, part1)]
+fn shortest_path(p: &Puzzle) -> usize {
+    p.shortest_path()
+}
+
+#[aoc(day15, part2)]
+fn shortest_path_expanded(p: &Puzzle) -> usize {
+    p.embiggen().shortest_path()
 }

@@ -1,6 +1,5 @@
-use std::{collections::HashMap, io, iter::FromIterator};
-
 use itertools::Itertools;
+use std::{collections::HashMap, iter::FromIterator};
 
 struct Puzzle {
     start: String,
@@ -134,9 +133,17 @@ CN -> C
     assert_eq!(puzzle.step_2(), 2188189693529);
 }
 
-fn main() {
-    let lines = io::stdin().lines().map(|s| s.unwrap());
-    let puzzle = Puzzle::from_iter(lines);
-    println!("{}", puzzle.step_1());
-    println!("{}", puzzle.step_2());
+#[aoc_generator(day14)]
+fn generate(input: &str) -> Puzzle {
+    Puzzle::from_iter(input.lines().map(|x| x.to_string()))
+}
+
+#[aoc(day14, part1)]
+fn step1(p: &Puzzle) -> usize {
+    p.step_1()
+}
+
+#[aoc(day14, part2)]
+fn step2(p: &Puzzle) -> usize {
+    p.step_2()
 }

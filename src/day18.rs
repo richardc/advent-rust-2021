@@ -8,7 +8,6 @@ use nom::{
     IResult,
 };
 use regex::{Captures, Regex};
-use std::io;
 
 fn add(lhs: &str, rhs: &str) -> String {
     format!("[{},{}]", lhs, rhs)
@@ -237,17 +236,23 @@ fn test_magnitude() {
     );
 }
 
-fn topscore(s: &[&str]) -> u64 {
+#[aoc_generator(day18)]
+fn generate(input: &str) -> Vec<String> {
+    input.lines().map(|x| x.to_string()).collect_vec()
+}
+
+#[aoc(day18, part1)]
+fn magnitude_of_all(input: &[String]) -> u64 {
+    magnitude(&add_set(
+        input.iter().map(|x| x.as_str()).collect_vec().as_slice(),
+    ))
+}
+
+#[aoc(day18, part2)]
+fn topscore(s: &[String]) -> u64 {
     s.into_iter()
         .permutations(2)
         .map(|v| magnitude(&reduce(&add(v[0], v[1]))))
         .max()
         .unwrap()
-}
-
-fn main() {
-    let lines = io::stdin().lines().map(|s| s.unwrap()).collect_vec();
-    let slices = lines.iter().map(|s| s.as_str()).collect_vec();
-    println!("{}", magnitude(&add_set(&slices)));
-    println!("{}", topscore(&slices));
 }
