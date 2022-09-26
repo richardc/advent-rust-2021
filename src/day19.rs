@@ -39,6 +39,25 @@ impl ops::Sub for Point {
     }
 }
 
+impl Point {
+    fn manhattan_distance(&self, other: &Self) -> i32 {
+        (self.x - other.x).abs() + (self.y - other.y).abs() + (self.z - other.z).abs()
+    }
+}
+
+#[test]
+fn test_manhattan_distance() {
+    assert_eq!(
+        Point::new(0, 0, 0).manhattan_distance(&Point::new(1, 0, 0)),
+        1,
+    );
+
+    assert_eq!(
+        Point::new(0, 0, 0).manhattan_distance(&Point::new(-100, 100, 200)),
+        400,
+    );
+}
+
 #[derive(Default)]
 struct Scanner {
     probes: Vec<Point>,
@@ -185,4 +204,20 @@ const EXAMPLE: &str = include_str!("day19_example.txt");
 #[test]
 fn test_count_beacons() {
     assert_eq!(count_beacons(&generate(EXAMPLE.trim())), 79);
+}
+
+#[aoc(day19, part2)]
+fn how_wide_was_it(scanners: &[Scanner]) -> i32 {
+    let points = assemble_points(scanners).1;
+    points
+        .iter()
+        .cartesian_product(points.iter())
+        .map(|(p1, p2)| p1.manhattan_distance(&p2))
+        .max()
+        .unwrap()
+}
+
+#[test]
+fn test_how_wide_was_it() {
+    assert_eq!(how_wide_was_it(&generate(EXAMPLE.trim())), 3621);
 }
