@@ -68,7 +68,7 @@ impl<'a> FromIterator<&'a str> for Scanner {
         let mut lines = iter.into_iter();
         lines.next(); // drop separator
         Scanner {
-            probes: lines.map(|s| Point::from(s)).collect(),
+            probes: lines.map(Point::from).collect(),
         }
     }
 }
@@ -180,7 +180,7 @@ fn assemble_points(scanners: &[Scanner]) -> (usize, Vec<Point>) {
     let mut known: HashSet<Point> = HashSet::from_iter(scanners[0].probes.clone());
     'outer: while !sensors.is_empty() {
         for i in 0..sensors.len() {
-            if let Some(position) = beacons_match(&mut known, &sensors[i]) {
+            if let Some(position) = beacons_match(&mut known, sensors[i]) {
                 positions.push(position);
                 sensors.remove(i);
                 continue 'outer;
@@ -212,7 +212,7 @@ fn how_wide_was_it(scanners: &[Scanner]) -> i32 {
     points
         .iter()
         .cartesian_product(points.iter())
-        .map(|(p1, p2)| p1.manhattan_distance(&p2))
+        .map(|(p1, p2)| p1.manhattan_distance(p2))
         .max()
         .unwrap()
 }

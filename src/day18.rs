@@ -23,7 +23,7 @@ fn split(s: &str) -> String {
         static ref RE: Regex = Regex::new(r"\d{2,}").unwrap();
     }
 
-    if let Some(m) = RE.find(&s) {
+    if let Some(m) = RE.find(s) {
         let left = &s[0..m.start()];
         let num = m.as_str().parse::<i32>().unwrap();
         let right = &s[m.end()..];
@@ -65,7 +65,7 @@ fn explode(s: &str) -> String {
         None
     }
 
-    if let Some((start, end)) = exploding_pair(&s) {
+    if let Some((start, end)) = exploding_pair(s) {
         let left = &s[0..start];
         let right = &s[end..];
 
@@ -143,7 +143,7 @@ fn test_reduce() {
 fn add_set(s: &[&str]) -> String {
     let mut res: String = s[0].to_string();
     for s in s.iter().skip(1) {
-        res = reduce(&add(&res, &s))
+        res = reduce(&add(&res, s))
     }
     res
 }
@@ -253,7 +253,7 @@ fn magnitude_of_all(input: &[String]) -> u64 {
 
 #[aoc(day18, part2)]
 fn topscore(s: &[String]) -> u64 {
-    s.into_iter()
+    s.iter()
         .permutations(2)
         .map(|v| magnitude(&reduce(&add(v[0], v[1]))))
         .max()
