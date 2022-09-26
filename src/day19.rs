@@ -1,6 +1,7 @@
 use itertools::Itertools;
+use std::{collections::HashSet, ops};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct Point {
     x: i32,
     y: i32,
@@ -21,6 +22,20 @@ impl From<&str> for Point {
 impl Point {
     fn new(x: i32, y: i32, z: i32) -> Self {
         Self { x, y, z }
+    }
+}
+
+impl ops::Add for Point {
+    type Output = Point;
+    fn add(self, rhs: Point) -> Self::Output {
+        Point::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    }
+}
+
+impl ops::Sub for Point {
+    type Output = Point;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Point::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
     }
 }
 
@@ -109,9 +124,59 @@ fn test_rotations() {
     );
 }
 
+fn beacons_match(known: &mut HashSet<Point>, sensor: &Scanner) -> Option<Point> {
+    let orientations = sensor.get_orientations();
+    for rotated in &orientations {
+        let distances = known
+            .iter()
+            .cartesian_product(rotated)
+            .map(|(known, check)| *known - *check);
+
+        for distance in distances {
+            let translated = rotated.iter().map(|p| *p + distance);
+            if translated.clone().filter(|p| known.contains(p)).count() >= 12 {
+                known.extend(translated);
+                return Some(distance);
+            }
+        }
+    }
+    None
+}
+
+#[test]
+fn test_beacons_match() {
+    let scanners = generate(include_str!("day19_example.txt"));
+    let sensors = Vec::from_iter(&scanners[1..]);
+    let mut known: HashSet<Point> = HashSet::from_iter(scanners[0].probes.clone());
+
+    assert_eq!(
+        beacons_match(&mut known, sensors[0]),
+        Some(Point::new(68, -1246, -43))
+    );
+}
+
+fn assemble_points(scanners: &[Scanner]) -> (usize, Vec<Point>) {
+    let mut sensors = Vec::from_iter(&scanners[1..]);
+    let mut positions = vec![];
+    let mut known: HashSet<Point> = HashSet::from_iter(scanners[0].probes.clone());
+    'outer: while !sensors.is_empty() {
+        for i in 0..sensors.len() {
+            if let Some(position) = beacons_match(&mut known, &sensors[i]) {
+                positions.push(position);
+                sensors.remove(i);
+                continue 'outer;
+            }
+        }
+        // We should match at least one sensor per pass
+        unreachable!()
+    }
+
+    (known.len(), positions)
+}
+
 #[aoc(day19, part1)]
-fn count_beacons(_scanners: &[Scanner]) -> usize {
-    0
+fn count_beacons(scanners: &[Scanner]) -> usize {
+    assemble_points(scanners).0
 }
 
 #[cfg(test)]
