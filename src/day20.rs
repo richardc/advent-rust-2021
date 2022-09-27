@@ -1,3 +1,5 @@
+use std::cmp::max;
+use std::cmp::min;
 use std::collections::HashSet;
 
 use itertools::Itertools;
@@ -99,25 +101,17 @@ fn test_neighbour_string() {
 
 impl Image {
     fn set_bounds(&mut self) {
-        let (x_min, x_max) = self
-            .pixels
-            .iter()
-            .map(|[x, _]| x)
-            .minmax()
-            .into_option()
-            .unwrap();
-        self.x_min = *x_min;
-        self.x_max = *x_max;
+        self.x_max = i32::MIN;
+        self.y_max = i32::MIN;
+        self.x_min = i32::MAX;
+        self.y_min = i32::MAX;
 
-        let (y_min, y_max) = self
-            .pixels
-            .iter()
-            .map(|[_, y]| y)
-            .minmax()
-            .into_option()
-            .unwrap();
-        self.y_min = *y_min;
-        self.y_max = *y_max;
+        for [x, y] in &self.pixels {
+            self.x_max = max(self.x_max, *x);
+            self.x_min = min(self.x_min, *x);
+            self.y_max = max(self.y_max, *y);
+            self.y_min = min(self.y_min, *y);
+        }
     }
 }
 
