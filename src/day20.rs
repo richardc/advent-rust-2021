@@ -33,7 +33,7 @@ fn generate(input: &str) -> Image {
     let algorithm = all[0].chars().map(to_bit).collect_vec().try_into().unwrap();
     let mut pixels = HashSet::new();
 
-    for (y, line) in (&all[2..]).iter().enumerate() {
+    for (y, line) in all[2..].iter().enumerate() {
         for (x, c) in line.chars().enumerate() {
             if c == '#' {
                 pixels.insert([x as i32, y as i32]);
