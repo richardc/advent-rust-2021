@@ -155,13 +155,19 @@ fn apply_steps(image: &Image, count: usize) -> usize {
     image.pixel_count()
 }
 
+#[test]
+fn test_apply_steps() {
+    let image = generate(include_str!("day20_example.txt"));
+    assert_eq!(apply_steps(&image, 2), 35);
+    assert_eq!(apply_steps(&image, 50), 3351);
+}
+
 #[aoc(day20, part1)]
-fn two_step(image: &Image) -> usize {
+fn enhance(image: &Image) -> usize {
     apply_steps(image, 2)
 }
 
-#[test]
-fn test_two_step() {
-    let image = generate(include_str!("day20_example.txt"));
-    assert_eq!(two_step(&image), 35);
+#[aoc(day20, part2)]
+fn really_enhance(image: &Image) -> usize {
+    apply_steps(image, 50)
 }
