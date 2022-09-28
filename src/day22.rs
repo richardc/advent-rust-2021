@@ -58,6 +58,10 @@ impl Reactor {
             cells: HashSet::new(),
         }
     }
+
+    fn lit_cubes(&self) -> usize {
+        self.cells.len()
+    }
 }
 
 impl Reactor {
@@ -77,21 +81,16 @@ impl Reactor {
 fn test_instruction_apply() {
     let mut reactor = Reactor::new();
     reactor.apply(&Instruction::from("on x=10..12,y=10..12,z=10..12"));
-    assert_eq!(reactor.cells.len(), 27);
+    assert_eq!(reactor.lit_cubes(), 27);
 
     reactor.apply(&Instruction::from("on x=11..13,y=11..13,z=11..13"));
-    assert_eq!(reactor.cells.len(), 27 + 19);
+    assert_eq!(reactor.lit_cubes(), 46);
 
     reactor.apply(&Instruction::from("off x=9..11,y=9..11,z=9..11"));
-    assert_eq!(reactor.cells.len(), 27 + 19 - 8);
+    assert_eq!(reactor.lit_cubes(), 38);
 
     reactor.apply(&Instruction::from("on x=10..10,y=10..10,z=10..10"));
-    assert_eq!(reactor.cells.len(), 39);
-
-    reactor.apply(&Instruction::from(
-        "on x=-54112..-39298,y=-85059..-49293,z=-27449..7877",
-    ));
-    assert_eq!(reactor.cells.len(), 39);
+    assert_eq!(reactor.lit_cubes(), 39);
 }
 
 #[aoc_generator(day22)]
@@ -100,18 +99,24 @@ fn generate(input: &str) -> Vec<Instruction> {
 }
 
 #[aoc(day22, part1)]
-fn lit_cubes(input: &[Instruction]) -> usize {
+fn lit_initialized_cubes(input: &[Instruction]) -> usize {
     let mut reactor = Reactor::new();
-    for instruction in input {
-        reactor.apply(&instruction);
-    }
-    reactor.cells.len()
+
+    // Only consider operations on our core
+    let bounds = parse_box("x=-50..50,y=-50..50,z=-50..50");
+
+    input
+        .iter()
+        .filter(|i| bounds.contains_box(&i.region))
+        .for_each(|i| reactor.apply(i));
+
+    reactor.lit_cubes()
 }
 
 #[test]
-fn test_lit_cubes() {
+fn test_lit_initialized_cubes() {
     assert_eq!(
-        lit_cubes(&generate(include_str!("day22_example.txt"))),
+        lit_initialized_cubes(&generate(include_str!("day22_example.txt"))),
         590784
     );
 }
