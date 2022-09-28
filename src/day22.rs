@@ -196,9 +196,7 @@ impl Reactor for SlicingReactor {
 
         for lit in &self.lit_regions {
             if let Some(intersection) = lit.intersection(&instruction.region) {
-                slice_cube(lit, &intersection).iter().for_each(|b| {
-                    regions.push(*b);
-                });
+                regions.extend(slice_cube(lit, &intersection));
             } else {
                 regions.push(*lit);
             }
