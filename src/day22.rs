@@ -5,6 +5,11 @@ use itertools::{iproduct, Itertools};
 use lazy_static::lazy_static;
 use regex::Regex;
 
+trait Reactor {
+    fn apply(&mut self, instuction: &Instruction);
+    fn lit_cubes(&self) -> usize;
+}
+
 fn parse_box(input: &str) -> Box3D<i64> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"x=(?P<x1>-?\d+)..(?P<x2>-?\d+),y=(?P<y1>-?\d+)..(?P<y2>-?\d+),z=(?P<z1>-?\d+)..(?P<z2>-?\d+)")
@@ -47,23 +52,23 @@ impl From<&str> for Instruction {
 }
 
 #[derive(Clone)]
-struct Reactor {
+struct CountingReactor {
     cells: HashSet<[i64; 3]>,
 }
 
-impl Reactor {
+impl CountingReactor {
     fn new() -> Self {
         Self {
             cells: HashSet::new(),
         }
     }
+}
 
+impl Reactor for CountingReactor {
     fn lit_cubes(&self) -> usize {
         self.cells.len()
     }
-}
 
-impl Reactor {
     fn apply(&mut self, instruction: &Instruction) {
         for (x, y, z) in iproduct!(
             instruction.region.x_range(),
@@ -80,7 +85,7 @@ impl Reactor {
 
 #[test]
 fn test_instruction_apply() {
-    let mut reactor = Reactor::new();
+    let mut reactor = CountingReactor::new();
     reactor.apply(&Instruction::from("on x=10..12,y=10..12,z=10..12"));
     assert_eq!(reactor.lit_cubes(), 27);
 
@@ -99,10 +104,7 @@ fn generate(input: &str) -> Vec<Instruction> {
     input.lines().map(Instruction::from).collect()
 }
 
-#[aoc(day22, part1)]
-fn lit_initialized_cubes(input: &[Instruction]) -> usize {
-    let mut reactor = Reactor::new();
-
+fn boot_reactor(reactor: &mut dyn Reactor, input: &[Instruction]) -> usize {
     // Only consider operations on our core
     let bounds = parse_box("x=-50..50,y=-50..50,z=-50..50");
 
@@ -112,6 +114,11 @@ fn lit_initialized_cubes(input: &[Instruction]) -> usize {
         .for_each(|i| reactor.apply(i));
 
     reactor.lit_cubes()
+}
+
+#[aoc(day22, part1)]
+fn lit_initialized_cubes(input: &[Instruction]) -> usize {
+    boot_reactor(&mut CountingReactor::new(), input)
 }
 
 #[test]
@@ -124,17 +131,7 @@ fn test_lit_initialized_cubes() {
 
 #[aoc(day22, part1, slicing)]
 fn lit_initialized_cubes_slicing(input: &[Instruction]) -> usize {
-    let mut reactor = SlicingReactor::new();
-
-    // Only consider operations on our core
-    let bounds = parse_box("x=-50..50,y=-50..50,z=-50..50");
-
-    input
-        .iter()
-        .filter(|i| bounds.contains_box(&i.region))
-        .for_each(|i| reactor.apply(i));
-
-    reactor.lit_cubes()
+    boot_reactor(&mut SlicingReactor::new(), input)
 }
 
 #[test]
@@ -191,7 +188,9 @@ impl SlicingReactor {
     fn new() -> Self {
         Self::default()
     }
+}
 
+impl Reactor for SlicingReactor {
     fn apply(&mut self, instruction: &Instruction) {
         let mut regions = vec![];
 
