@@ -2,6 +2,9 @@ use std::collections::{BinaryHeap, HashMap};
 
 use itertools::Itertools;
 
+#[cfg(test)]
+use pretty_assertions::assert_eq;
+
 type Cost = u32;
 
 #[derive(PartialEq, Eq, Clone, Default)]
