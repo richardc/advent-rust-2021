@@ -66,6 +66,21 @@ fn test_game_solved_state() {
 }
 
 impl Game {
+    fn moves_for_pod(&self, state: &State, pod: Pod) -> Vec<(State, Cost)> {
+        // Check are we in home column
+        // True, Check if the cells below us are all of our kind.
+        // -- True, we are home, no move needed
+        // -- False, Move to each hallway cell
+
+        // False, In hallway, want to go home
+        // Check if everything in our home column already is of our kind OR home column is free
+        // -- True, move to the lowest free home cell
+        // -- False, no move, we'd box someone in
+        vec![]
+    }
+}
+
+impl Game {
     fn legal_moves(&self, _state: &State) -> Vec<(State, Cost)> {
         vec![]
     }
