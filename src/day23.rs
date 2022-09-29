@@ -27,11 +27,21 @@ impl Game {
         }
         Game { state, moves }
     }
+}
 
-    fn legal_moves(&self, _state: &State) -> Vec<(State, Cost)> {
-        vec![]
+impl From<&str> for Game {
+    fn from(input: &str) -> Self {
+        Game::new(
+            input
+                .chars()
+                .into_iter()
+                .filter(|c| matches!(c, 'A' | 'B' | 'C' | 'D'))
+                .collect(),
+        )
     }
+}
 
+impl Game {
     fn solved(&self, state: &State) -> bool {
         let columns = ['a', 'b', 'c', 'd'];
         (0..2).cartesian_product(columns).all(|(index, column)| {
@@ -55,15 +65,9 @@ fn test_game_solved_state() {
     assert_eq!(game.solved(&game.state), true);
 }
 
-impl From<&str> for Game {
-    fn from(input: &str) -> Self {
-        Game::new(
-            input
-                .chars()
-                .into_iter()
-                .filter(|c| matches!(c, 'A' | 'B' | 'C' | 'D'))
-                .collect(),
-        )
+impl Game {
+    fn legal_moves(&self, _state: &State) -> Vec<(State, Cost)> {
+        vec![]
     }
 }
 
