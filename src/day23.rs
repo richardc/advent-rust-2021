@@ -246,13 +246,13 @@ fn all_moves(depth: u8) -> Vec<Move> {
                     index: x,
                     ..base.start
                 }));
-                let extra = Move {
+
+                Move {
                     start,
                     blocked,
                     moves: base.moves + index as Cost,
                     ..*base
-                };
-                extra
+                }
             })
         })
         .collect()
