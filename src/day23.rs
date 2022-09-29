@@ -61,10 +61,7 @@ impl From<&str> for Game {
             input
                 .chars()
                 .into_iter()
-                .filter(|c| match c {
-                    'A' | 'B' | 'C' | 'D' => true,
-                    _ => false,
-                })
+                .filter(|c| matches!(c, 'A' | 'B' | 'C' | 'D'))
                 .collect(),
         )
     }
