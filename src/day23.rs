@@ -13,6 +13,7 @@ struct Game {
 impl Game {
     fn new(pods: Vec<char>) -> Self {
         let columns = ['a', 'b', 'c', 'd'];
+
         let moves = all_moves(pods.len() as u8 / 4);
         let mut state = State::default();
 
@@ -31,9 +32,27 @@ impl Game {
         vec![]
     }
 
-    fn solved(&self, _state: &State) -> bool {
-        false
+    fn solved(&self, state: &State) -> bool {
+        let columns = ['a', 'b', 'c', 'd'];
+        (0..2).cartesian_product(columns).all(|(index, column)| {
+            if let Some(pod) = state.cells.get(&Cell { column, index }) {
+                pod.kind == column.to_ascii_uppercase()
+            } else {
+                false
+            }
+        })
     }
+}
+
+#[test]
+fn test_game_solved_state() {
+    let game = Game::from("ABDC ABCD");
+    assert_eq!(game.state, "a0=A,a1=A,b0=B,b1=B,c0=D,c1=C,d0=C,d1=D");
+    assert_eq!(game.solved(&game.state), false);
+
+    let game = Game::from("ABCD ABCD");
+    assert_eq!(game.state, "a0=A,a1=A,b0=B,b1=B,c0=C,c1=C,d0=D,d1=D");
+    assert_eq!(game.solved(&game.state), true);
 }
 
 impl From<&str> for Game {
@@ -299,7 +318,7 @@ impl PartialEq<&str> for State {
 }
 
 #[test]
-fn test_state() {
+fn test_game_state() {
     assert_eq!(
         generate(include_str!("day23_example.txt")).state,
         "a0=B,a1=A,b0=C,b1=D,c0=B,c1=C,d0=D,d1=A"
