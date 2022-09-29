@@ -2,70 +2,110 @@ use std::collections::{BinaryHeap, HashMap};
 
 use itertools::Itertools;
 
-#[derive(PartialEq, Eq, Clone, Copy, Default, Hash)]
-struct State {
-    cells: [u8; 1],
-}
+type Cost = u32;
 
 #[derive(PartialEq, Eq, Clone, Default)]
 struct Game {
     state: State,
-    cost: u32,
-    solved: bool,
+    moves: Vec<Move>,
 }
 
-impl Ord for Game {
+impl Game {
+    fn new(pods: Vec<char>) -> Self {
+        let columns = ['a', 'b', 'c', 'd'];
+        let moves = all_moves(pods.len() as u8 / 4);
+        let mut state = State::default();
+
+        for (i, pod) in pods.iter().enumerate() {
+            let cell = Cell {
+                column: columns[i % 4],
+                index: i as u8 / 4,
+            };
+
+            state.cells.insert(cell, Pod::new(*pod));
+        }
+        Game { state, moves }
+    }
+
+    fn legal_moves(&self, _state: &State) -> Vec<(State, Cost)> {
+        vec![]
+    }
+
+    fn solved(&self, _state: &State) -> bool {
+        false
+    }
+}
+
+impl From<&str> for Game {
+    fn from(input: &str) -> Self {
+        Game::new(
+            input
+                .chars()
+                .into_iter()
+                .filter(|c| match c {
+                    'A' | 'B' | 'C' | 'D' => true,
+                    _ => false,
+                })
+                .collect(),
+        )
+    }
+}
+
+#[aoc_generator(day23)]
+fn generate(input: &str) -> Game {
+    Game::from(input)
+}
+
+// Walk over the game states
+#[derive(PartialEq, Eq, Clone, Default)]
+struct Walk {
+    state: State,
+    cost: Cost,
+}
+
+impl Ord for Walk {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.cost.cmp(&self.cost)
     }
 }
 
-impl PartialOrd for Game {
+impl PartialOrd for Walk {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Game {
-    fn legal_moves(&self) -> Vec<Game> {
-        vec![Game {
-            state: State { cells: [1] },
-            cost: 42,
-            solved: true,
-            ..self.clone()
-        }]
-    }
-}
-
-#[aoc_generator(day23)]
-fn generate(_input: &str) -> Game {
-    Game::default()
-}
-
 // Dijkstra but using a HashMap rather than an array to track Game States
 #[aoc(day23, part1)]
-fn cheapest_path(input: &Game) -> u32 {
-    let start = input.clone();
-    let mut costs: HashMap<State, u32> = HashMap::new();
+fn cheapest_path(game: &Game) -> Cost {
+    let mut costs: HashMap<State, Cost> = HashMap::new();
     let mut queue = BinaryHeap::new();
 
-    costs.insert(start.state, 0);
-    queue.push(start);
+    costs.insert(game.state.to_owned(), 0);
+    queue.push(Walk {
+        state: game.state.to_owned(),
+        cost: 0,
+    });
 
-    while let Some(game) = queue.pop() {
-        if game.solved {
-            return game.cost;
+    while let Some(Walk { state, cost }) = queue.pop() {
+        if game.solved(&state) {
+            return cost;
         }
 
-        if game.cost > *costs.entry(game.state).or_insert(u32::MAX) {
+        if cost > *costs.entry(state.to_owned()).or_insert(u32::MAX) {
             // We've found a cheaper way to reach this state, skip
             continue;
         }
 
-        for next in game.legal_moves() {
+        for (state, move_cost) in game.legal_moves(&state) {
+            let next = Walk {
+                state,
+                cost: cost + move_cost,
+            };
+
             // is this a cheaper way to a known state?
-            if next.cost < *costs.entry(next.state).or_insert(u32::MAX) {
-                costs.insert(next.state, next.cost);
+            if next.cost < *costs.entry(next.state.to_owned()).or_insert(u32::MAX) {
+                costs.insert(next.state.to_owned(), next.cost);
                 queue.push(next);
             }
         }
@@ -78,7 +118,7 @@ fn test_cheapest_path() {
     assert_eq!(cheapest_path(&Game::default()), 42);
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 struct Cell {
     column: char,
     index: u8,
@@ -116,11 +156,11 @@ struct Move {
     start: Cell,
     end: Cell,
     blocked: Vec<Cell>,
-    moves: u8,
+    moves: Cost,
 }
 
 impl Move {
-    fn new(start: &str, end: &str, blocked: Vec<&str>, moves: u8) -> Self {
+    fn new(start: &str, end: &str, blocked: Vec<&str>, moves: Cost) -> Self {
         Self {
             start: Cell::from(start),
             end: Cell::from(end),
@@ -193,7 +233,7 @@ fn all_moves(depth: u8) -> Vec<Move> {
                 let extra = Move {
                     start,
                     blocked,
-                    moves: base.moves + index,
+                    moves: base.moves + index as Cost,
                     ..*base
                 };
                 extra
@@ -219,4 +259,66 @@ fn test_all_moves() {
     // From the derived states, it costs one more and must step up
     assert_eq!(moves["a3 -> h0"].moves, 6);
     assert_eq!(moves["a3 -> h0"].blocked, vec!["h1", "a0", "a1", "a2"]);
+}
+
+#[derive(PartialEq, Eq, Clone, Default)]
+struct State {
+    cells: HashMap<Cell, Pod>,
+}
+
+impl std::fmt::Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.cells
+                .iter()
+                .sorted_by_key(|(&cell, _)| cell)
+                .map(|(cell, pod)| format!("{}={}", cell, pod))
+                .join(",")
+        )
+    }
+}
+
+impl std::fmt::Debug for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl std::hash::Hash for State {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        format!("{}", self).hash(state)
+    }
+}
+
+impl PartialEq<&str> for State {
+    fn eq(&self, other: &&str) -> bool {
+        format!("{}", self) == *other
+    }
+}
+
+#[test]
+fn test_state() {
+    assert_eq!(
+        generate(include_str!("day23_example.txt")).state,
+        "a0=B,a1=A,b0=C,b1=D,c0=B,c1=C,d0=D,d1=A"
+    );
+}
+
+#[derive(PartialEq, Eq, Clone)]
+struct Pod {
+    kind: char,
+}
+
+impl Pod {
+    fn new(kind: char) -> Self {
+        Self { kind }
+    }
+}
+
+impl std::fmt::Display for Pod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.kind)
+    }
 }
