@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use itertools::Itertools;
 use pathfinding::prelude::dijkstra;
 
@@ -52,7 +50,7 @@ impl Game {
         let columns = ['a', 'b', 'c', 'd'];
         (0..2).cartesian_product(columns).all(|(index, column)| {
             if let Some(pod) = state.pod_at(&Cell { column, index }) {
-                pod.kind == column.to_ascii_uppercase()
+                pod == column.to_ascii_uppercase()
             } else {
                 false
             }
@@ -71,16 +69,26 @@ fn test_game_solved_state() {
     assert!(game.solved(&game.state));
 }
 
+fn pod_cost(pod: char) -> Cost {
+    match pod {
+        'A' => 1,
+        'B' => 10,
+        'C' => 100,
+        'D' => 1000,
+        _ => unreachable!(),
+    }
+}
+
 impl Game {
     fn moves_for_cell(&self, state: &State, cell: &Cell) -> Vec<(State, Cost)> {
         let pod = state.pod_at(cell).unwrap();
         if cell.column != 'h' {
             // In a home room
-            if pod.kind.to_ascii_lowercase() == cell.column {
+            if pod.to_ascii_lowercase() == cell.column {
                 // In our home room
                 if (cell.index..self.rows).all(|index| {
                     if let Some(occupant) = state.pod_at(&Cell { index, ..*cell }) {
-                        pod.kind == occupant.kind
+                        pod == occupant
                     } else {
                         false
                     }
@@ -96,14 +104,14 @@ impl Game {
                 .iter()
                 .filter(|m| m.start == *cell)
                 .filter(|m| !m.blocked.iter().any(|cell| state.occupied(cell)))
-                .map(|m| (state.make_move(&m.start, &m.end), m.moves * pod.cost()))
+                .map(|m| (state.make_move(&m.start, &m.end), m.moves * pod_cost(pod)))
                 .collect();
         } else {
             // We're in the hallway.  We can go home if our homeroom is empty or has no strangers
-            let column = pod.kind.to_ascii_lowercase();
+            let column = pod.to_ascii_lowercase();
             if !(0..self.rows).all(|index| {
                 if let Some(occupant) = state.pod_at(&Cell { column, index }) {
-                    pod.kind == occupant.kind
+                    pod == occupant
                 } else {
                     true
                 }
@@ -129,7 +137,7 @@ impl Game {
                 .filter(|m| m.start == home_cell && m.end == *cell)
                 // not blocked
                 .filter(|m| !m.blocked.iter().any(|cell| state.occupied(cell)))
-                .map(|m| (state.make_move(&m.end, &m.start), m.moves * pod.cost()))
+                .map(|m| (state.make_move(&m.end, &m.start), m.moves * pod_cost(pod)))
                 .collect();
         }
     }
@@ -177,10 +185,11 @@ fn test_moves_for_cell() {
 
 impl Game {
     fn legal_moves(&self, state: &State) -> Vec<(State, Cost)> {
-        state
-            .cells
-            .keys()
-            .flat_map(|cell| self.moves_for_cell(state, cell))
+        CELLS
+            .into_iter()
+            .map(|cell| Cell::from(cell))
+            .filter(|cell| state.occupied(cell))
+            .flat_map(|cell| self.moves_for_cell(state, &cell))
             .collect()
     }
 }
@@ -215,6 +224,28 @@ impl std::fmt::Debug for Cell {
 impl PartialEq<&str> for Cell {
     fn eq(&self, other: &&str) -> bool {
         format!("{}", self) == *other
+    }
+}
+
+impl Cell {
+    fn index(&self) -> usize {
+        match self.column {
+            'h' => match self.index {
+                0 => 0,
+                1 => 1,
+                3 => 2,
+                5 => 3,
+                7 => 4,
+                9 => 5,
+                10 => 6,
+                _ => unreachable!(),
+            },
+            'a' => 8 + self.index as usize,
+            'b' => 12 + self.index as usize,
+            'c' => 16 + self.index as usize,
+            'd' => 20 + self.index as usize,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -311,6 +342,7 @@ fn all_moves(depth: u8) -> Vec<Move> {
 
 #[test]
 fn test_all_moves() {
+    use std::collections::HashMap;
     let moves: HashMap<String, Move> = HashMap::from_iter(
         all_moves(4)
             .into_iter()
@@ -328,9 +360,36 @@ fn test_all_moves() {
     assert_eq!(moves["a3 -> h0"].blocked, vec!["h1", "a0", "a1", "a2"]);
 }
 
-#[derive(PartialEq, Eq, Clone, Default)]
-struct State {
-    cells: HashMap<Cell, Pod>,
+const CELLS: [&str; 23] = [
+    "a0", "a1", "a2", "a3", "b0", "b1", "b2", "b3", "c0", "c1", "c2", "c3", "d0", "d1", "d2", "d3",
+    "h0", "h1", "h3", "h5", "h7", "h9", "h10",
+];
+
+#[derive(Default, PartialEq, Eq, Clone, Copy, Hash)]
+struct State([u8; 24]);
+
+impl State {
+    fn pod_at(&self, cell: &Cell) -> Option<char> {
+        match self.0[cell.index()] {
+            0 => None,
+            byte => Some(byte as char),
+        }
+    }
+
+    fn occupied(&self, cell: &Cell) -> bool {
+        self.0[cell.index()] != 0
+    }
+
+    fn make_move(&self, from: &Cell, to: &Cell) -> Self {
+        let mut new = *self;
+        new.0[to.index()] = new.0[from.index()];
+        new.0[from.index()] = 0;
+        new
+    }
+
+    fn set(&mut self, cell: &Cell, pod: char) {
+        self.0[cell.index()] = pod as u8;
+    }
 }
 
 impl std::fmt::Display for State {
@@ -338,10 +397,11 @@ impl std::fmt::Display for State {
         write!(
             f,
             "{}",
-            self.cells
-                .iter()
-                .sorted_by_key(|(&cell, _)| cell)
-                .map(|(cell, pod)| format!("{}={}", cell, pod))
+            CELLS
+                .into_iter()
+                .map(|c| Cell::from(c))
+                .filter(|c| self.occupied(c))
+                .map(|c| format!("{}={}", c, self.pod_at(&c).unwrap()))
                 .join(",")
         )
     }
@@ -353,18 +413,6 @@ impl std::fmt::Debug for State {
     }
 }
 
-impl std::hash::Hash for State {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.cells
-            .iter()
-            .sorted_by_key(|(&cell, _)| cell)
-            .for_each(|(cell, pod)| {
-                cell.hash(state);
-                pod.kind.hash(state);
-            });
-    }
-}
-
 impl PartialEq<&str> for State {
     fn eq(&self, other: &&str) -> bool {
         format!("{}", self) == *other
@@ -373,29 +421,11 @@ impl PartialEq<&str> for State {
 
 impl From<&str> for State {
     fn from(input: &str) -> Self {
-        Self {
-            cells: HashMap::from_iter(input.split(',').map(|assignment| {
-                let (cell, pod) = assignment.split_once('=').unwrap();
-                (Cell::from(cell), Pod::from(pod))
-            })),
-        }
-    }
-}
-
-impl State {
-    fn pod_at(&self, cell: &Cell) -> Option<&Pod> {
-        self.cells.get(cell)
-    }
-
-    fn occupied(&self, cell: &Cell) -> bool {
-        self.cells.contains_key(cell)
-    }
-
-    fn make_move(&self, from: &Cell, to: &Cell) -> Self {
-        let mut new = self.clone();
-        if let Some(pod) = new.cells.remove(from) {
-            new.cells.insert(*to, pod);
-        }
+        let mut new = Self::default();
+        input.split(',').for_each(|assignment| {
+            let (cell, pod) = assignment.split_once('=').unwrap();
+            new.set(&Cell::from(cell), pod.chars().next().unwrap());
+        });
         new
     }
 }
@@ -406,39 +436,6 @@ fn test_game_state() {
         generate(include_str!("day23_example.txt")).state,
         "a0=B,a1=A,b0=C,b1=D,c0=B,c1=C,d0=D,d1=A"
     );
-}
-
-#[derive(PartialEq, Eq, Clone, Debug)]
-struct Pod {
-    kind: char,
-}
-
-impl Pod {
-    fn new(kind: char) -> Self {
-        Self { kind }
-    }
-
-    fn cost(&self) -> Cost {
-        match self.kind {
-            'A' => 1,
-            'B' => 10,
-            'C' => 100,
-            'D' => 1000,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl std::fmt::Display for Pod {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.kind)
-    }
-}
-
-impl From<&str> for Pod {
-    fn from(input: &str) -> Self {
-        Pod::new(input.chars().next().unwrap())
-    }
 }
 
 fn cheapest_path(game: &Game) -> Cost {
