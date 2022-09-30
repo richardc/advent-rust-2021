@@ -15,6 +15,7 @@ lazy_static = "1.4.0"
 memoize = "0.3.1"
 ndarray = "0.15.6"
 nom = "7.1.1"
+pathfinding = "3.0.13"
 regex = "1.6.0"
 
 [dev-dependencies]

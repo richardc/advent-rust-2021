@@ -1,6 +1,7 @@
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::HashMap;
 
 use itertools::Itertools;
+use pathfinding::prelude::dijkstra;
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;
@@ -211,52 +212,6 @@ impl PartialOrd for Walk {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
-}
-// Dijkstra but using a HashMap rather than an array to track Game States
-fn cheapest_path(game: &Game) -> Cost {
-    let mut costs: HashMap<State, Cost> = HashMap::new();
-    let mut queue = BinaryHeap::new();
-
-    costs.insert(game.state.to_owned(), 0);
-    queue.push(Walk {
-        state: game.state.to_owned(),
-        cost: 0,
-    });
-
-    while let Some(Walk { state, cost }) = queue.pop() {
-        if game.solved(&state) {
-            return cost;
-        }
-
-        if cost > *costs.entry(state.to_owned()).or_insert(Cost::MAX) {
-            // We've found a cheaper way to reach this state, so we're not interested in the paths out
-            continue;
-        }
-
-        for (state, move_cost) in game.legal_moves(&state) {
-            let next = Walk {
-                state,
-                cost: cost + move_cost,
-            };
-
-            // Is this currently the cheapest path to a known state?
-            if next.cost < *costs.entry(next.state.to_owned()).or_insert(Cost::MAX) {
-                // Yes, queue it up
-                costs.insert(next.state.to_owned(), next.cost);
-                queue.push(next);
-            }
-        }
-    }
-    Cost::MAX
-}
-
-#[ignore] // This is slow
-#[test]
-fn test_cheapest_path() {
-    assert_eq!(
-        cheapest_path(&generate(include_str!("day23_example.txt"))),
-        12521,
-    );
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Default)]
@@ -497,6 +452,23 @@ impl From<&str> for Pod {
     }
 }
 
+fn cheapest_path(game: &Game) -> Cost {
+    if let Some((_, c)) = dijkstra(&game.state, |p| game.legal_moves(p), |p| game.solved(p)) {
+        return c;
+    }
+
+    Cost::MAX
+}
+
+#[ignore] // This is slow
+#[test]
+fn test_cheapest_path() {
+    assert_eq!(
+        cheapest_path(&generate(include_str!("day23_example.txt"))),
+        12521,
+    );
+}
+
 #[aoc_generator(day23, part1)]
 fn generate(input: &str) -> Game {
     Game::from(input)
@@ -518,7 +490,7 @@ fn generate_spliced(input: &str) -> Game {
 
 #[aoc(day23, part1)]
 #[aoc(day23, part2)]
-fn part1(game: &Game) -> Cost {
+fn solve(game: &Game) -> Cost {
     cheapest_path(game)
 }
 
