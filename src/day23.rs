@@ -120,9 +120,7 @@ impl Game {
             }
 
             let lowest_spot = (0..self.rows as u8)
-                .rev()
-                .filter(|&index| !state.occupied(&Cell { column, index }))
-                .next()
+                .rev().find(|&index| !state.occupied(&Cell { column, index }))
                 .unwrap();
 
             let home_cell = Cell {
@@ -187,7 +185,7 @@ impl Game {
     fn legal_moves(&self, state: &State) -> Vec<(State, Cost)> {
         CELLS
             .into_iter()
-            .map(|cell| Cell::from(cell))
+            .map(Cell::from)
             .filter(|cell| state.occupied(cell))
             .flat_map(|cell| self.moves_for_cell(state, &cell))
             .collect()
@@ -399,7 +397,7 @@ impl std::fmt::Display for State {
             "{}",
             CELLS
                 .into_iter()
-                .map(|c| Cell::from(c))
+                .map(Cell::from)
                 .filter(|c| self.occupied(c))
                 .map(|c| format!("{}={}", c, self.pod_at(&c).unwrap()))
                 .join(",")
