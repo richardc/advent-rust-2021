@@ -51,7 +51,7 @@ impl Game {
     fn solved(&self, state: &State) -> bool {
         let columns = ['a', 'b', 'c', 'd'];
         (0..2).cartesian_product(columns).all(|(index, column)| {
-            if let Some(pod) = state.cells.get(&Cell { column, index }) {
+            if let Some(pod) = state.pod_at(&Cell { column, index }) {
                 pod.kind == column.to_ascii_uppercase()
             } else {
                 false
@@ -73,13 +73,13 @@ fn test_game_solved_state() {
 
 impl Game {
     fn moves_for_cell(&self, state: &State, cell: &Cell) -> Vec<(State, Cost)> {
-        let pod = state.cells.get(cell).unwrap();
+        let pod = state.pod_at(cell).unwrap();
         if cell.column != 'h' {
             // In a home room
             if pod.kind.to_ascii_lowercase() == cell.column {
                 // In our home room
                 if (cell.index..self.rows).all(|index| {
-                    if let Some(occupant) = state.cells.get(&Cell { index, ..*cell }) {
+                    if let Some(occupant) = state.pod_at(&Cell { index, ..*cell }) {
                         pod.kind == occupant.kind
                     } else {
                         false
@@ -95,19 +95,14 @@ impl Game {
                 .moves
                 .iter()
                 .filter(|m| m.start == *cell)
-                .filter(|m| !m.blocked.iter().any(|cell| state.cells.contains_key(cell)))
-                .map(|m| {
-                    let mut state = state.clone();
-                    state.cells.remove(cell);
-                    state.cells.insert(m.end, pod.clone());
-                    (state, m.moves * pod.cost())
-                })
+                .filter(|m| !m.blocked.iter().any(|cell| state.occupied(cell)))
+                .map(|m| (state.make_move(&m.start, &m.end), m.moves * pod.cost()))
                 .collect();
         } else {
             // We're in the hallway.  We can go home if our homeroom is empty or has no strangers
             let column = pod.kind.to_ascii_lowercase();
             if !(0..self.rows).all(|index| {
-                if let Some(occupant) = state.cells.get(&Cell { column, index }) {
+                if let Some(occupant) = state.pod_at(&Cell { column, index }) {
                     pod.kind == occupant.kind
                 } else {
                     true
@@ -118,7 +113,7 @@ impl Game {
 
             let lowest_spot = (0..self.rows as u8)
                 .rev()
-                .filter(|&index| !state.cells.contains_key(&Cell { column, index }))
+                .filter(|&index| !state.occupied(&Cell { column, index }))
                 .next()
                 .unwrap();
 
@@ -133,13 +128,8 @@ impl Game {
                 // inverse path
                 .filter(|m| m.start == home_cell && m.end == *cell)
                 // not blocked
-                .filter(|m| !m.blocked.iter().any(|cell| state.cells.contains_key(cell)))
-                .map(|m| {
-                    let mut state = state.clone();
-                    state.cells.remove(cell);
-                    state.cells.insert(m.start, pod.clone());
-                    (state, m.moves * pod.cost())
-                })
+                .filter(|m| !m.blocked.iter().any(|cell| state.occupied(cell)))
+                .map(|m| (state.make_move(&m.end, &m.start), m.moves * pod.cost()))
                 .collect();
         }
     }
@@ -192,25 +182,6 @@ impl Game {
             .keys()
             .flat_map(|cell| self.moves_for_cell(state, cell))
             .collect()
-    }
-}
-
-// Walk over the game states
-#[derive(PartialEq, Eq, Clone, Default)]
-struct Walk {
-    state: State,
-    cost: Cost,
-}
-
-impl Ord for Walk {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.cost.cmp(&self.cost)
-    }
-}
-
-impl PartialOrd for Walk {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
     }
 }
 
@@ -408,6 +379,24 @@ impl From<&str> for State {
                 (Cell::from(cell), Pod::from(pod))
             })),
         }
+    }
+}
+
+impl State {
+    fn pod_at(&self, cell: &Cell) -> Option<&Pod> {
+        self.cells.get(cell)
+    }
+
+    fn occupied(&self, cell: &Cell) -> bool {
+        self.cells.contains_key(cell)
+    }
+
+    fn make_move(&self, from: &Cell, to: &Cell) -> Self {
+        let mut new = self.clone();
+        if let Some(pod) = new.cells.remove(from) {
+            new.cells.insert(*to, pod);
+        }
+        new
     }
 }
 
