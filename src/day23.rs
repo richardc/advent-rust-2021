@@ -431,7 +431,13 @@ impl std::fmt::Debug for State {
 
 impl std::hash::Hash for State {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        format!("{}", self).hash(state)
+        self.cells
+            .iter()
+            .sorted_by_key(|(&cell, _)| cell)
+            .for_each(|(cell, pod)| {
+                cell.hash(state);
+                pod.kind.hash(state);
+            });
     }
 }
 
