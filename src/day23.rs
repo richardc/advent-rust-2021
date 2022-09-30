@@ -521,3 +521,15 @@ fn generate_spliced(input: &str) -> Game {
 fn part1(game: &Game) -> Cost {
     cheapest_path(game)
 }
+
+#[test]
+fn test_spliced() {
+    let game = generate_spliced(include_str!("day23_example.txt"));
+    assert_eq!(game.rows, 4);
+    assert_eq!(
+        game.state,
+        State::from(
+            "a0=B,a1=D,a2=D,a3=A,b0=C,b1=C,b2=B,b3=D,c0=B,c1=B,c2=A,c3=C,d0=D,d1=A,d2=C,d3=A"
+        )
+    );
+}
