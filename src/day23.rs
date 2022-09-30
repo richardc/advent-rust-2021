@@ -20,16 +20,14 @@ impl Game {
 
         let rows = pods.len() as u8 / 4;
         let moves = all_moves(rows);
-        let mut state = State::default();
 
-        for (i, pod) in pods.iter().enumerate() {
-            let cell = Cell {
-                column: columns[i % 4],
-                index: i as u8 / 4,
-            };
-
-            state.cells.insert(cell, Pod::new(*pod));
-        }
+        let state = State::from(
+            pods.iter()
+                .enumerate()
+                .map(|(i, pod)| format!("{}{}={}", columns[i % 4], i / 4, pod))
+                .join(",")
+                .as_str(),
+        );
         Game { rows, state, moves }
     }
 }
