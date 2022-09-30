@@ -9,6 +9,7 @@ type Cost = u32;
 
 #[derive(PartialEq, Eq, Clone, Default)]
 struct Game {
+    rows: u8,
     state: State,
     moves: Vec<Move>,
 }
@@ -17,7 +18,8 @@ impl Game {
     fn new(pods: Vec<char>) -> Self {
         let columns = ['a', 'b', 'c', 'd'];
 
-        let moves = all_moves(pods.len() as u8 / 4);
+        let rows = pods.len() as u8 / 4;
+        let moves = all_moves(rows);
         let mut state = State::default();
 
         for (i, pod) in pods.iter().enumerate() {
@@ -28,19 +30,21 @@ impl Game {
 
             state.cells.insert(cell, Pod::new(*pod));
         }
-        Game { state, moves }
+        Game { rows, state, moves }
     }
+}
+
+fn pod_chars(input: &str) -> Vec<char> {
+    input
+        .chars()
+        .into_iter()
+        .filter(|c| matches!(c, 'A' | 'B' | 'C' | 'D'))
+        .collect()
 }
 
 impl From<&str> for Game {
     fn from(input: &str) -> Self {
-        Game::new(
-            input
-                .chars()
-                .into_iter()
-                .filter(|c| matches!(c, 'A' | 'B' | 'C' | 'D'))
-                .collect(),
-        )
+        Game::new(pod_chars(input))
     }
 }
 
@@ -75,7 +79,7 @@ impl Game {
             // In a home room
             if pod.kind.to_ascii_lowercase() == cell.column {
                 // In our home room
-                if (cell.index..2).all(|index| {
+                if (cell.index..self.rows).all(|index| {
                     if let Some(occupant) = state.cells.get(&Cell { index, ..*cell }) {
                         pod.kind == occupant.kind
                     } else {
@@ -103,7 +107,7 @@ impl Game {
         } else {
             // We're in the hallway.  We can go home if our homeroom is empty or has no strangers
             let column = pod.kind.to_ascii_lowercase();
-            if !(0..2).all(|index| {
+            if !(0..self.rows).all(|index| {
                 if let Some(occupant) = state.cells.get(&Cell { column, index }) {
                     pod.kind == occupant.kind
                 } else {
@@ -113,7 +117,7 @@ impl Game {
                 return vec![];
             }
 
-            let lowest_spot = (0..2 as u8)
+            let lowest_spot = (0..self.rows as u8)
                 .rev()
                 .filter(|&index| !state.cells.contains_key(&Cell { column, index }))
                 .next()
@@ -192,11 +196,6 @@ impl Game {
     }
 }
 
-#[aoc_generator(day23)]
-fn generate(input: &str) -> Game {
-    Game::from(input)
-}
-
 // Walk over the game states
 #[derive(PartialEq, Eq, Clone, Default)]
 struct Walk {
@@ -215,13 +214,7 @@ impl PartialOrd for Walk {
         Some(self.cmp(other))
     }
 }
-
 // Dijkstra but using a HashMap rather than an array to track Game States
-#[aoc(day23, part1)]
-fn part1(game: &Game) -> Cost {
-    cheapest_path(game)
-}
-
 fn cheapest_path(game: &Game) -> Cost {
     let mut costs: HashMap<State, Cost> = HashMap::new();
     let mut queue = BinaryHeap::new();
@@ -259,6 +252,7 @@ fn cheapest_path(game: &Game) -> Cost {
     Cost::MAX
 }
 
+#[ignore] // This is slow
 #[test]
 fn test_cheapest_path() {
     assert_eq!(
@@ -497,4 +491,29 @@ impl From<&str> for Pod {
     fn from(input: &str) -> Self {
         Pod::new(input.chars().next().unwrap())
     }
+}
+
+#[aoc_generator(day23, part1)]
+fn generate(input: &str) -> Game {
+    Game::from(input)
+}
+
+#[aoc_generator(day23, part2)]
+fn generate_spliced(input: &str) -> Game {
+    let pods = pod_chars(input);
+    let (left, right) = pods.split_at(4);
+    Game::from(
+        format!(
+            "{} DCBA DBAC {}",
+            String::from_iter(left),
+            String::from_iter(right)
+        )
+        .as_str(),
+    )
+}
+
+#[aoc(day23, part1)]
+#[aoc(day23, part2)]
+fn part1(game: &Game) -> Cost {
+    cheapest_path(game)
 }
