@@ -61,31 +61,134 @@ impl Game {
 fn test_game_solved_state() {
     let game = Game::from("ABDC ABCD");
     assert_eq!(game.state, "a0=A,a1=A,b0=B,b1=B,c0=D,c1=C,d0=C,d1=D");
-    assert_eq!(game.solved(&game.state), false);
+    assert!(!game.solved(&game.state));
 
     let game = Game::from("ABCD ABCD");
     assert_eq!(game.state, "a0=A,a1=A,b0=B,b1=B,c0=C,c1=C,d0=D,d1=D");
-    assert_eq!(game.solved(&game.state), true);
+    assert!(game.solved(&game.state));
 }
 
 impl Game {
-    fn moves_for_pod(&self, state: &State, pod: Pod) -> Vec<(State, Cost)> {
-        // Check are we in home column
-        // True, Check if the cells below us are all of our kind.
-        // -- True, we are home, no move needed
-        // -- False, Move to each hallway cell
+    fn moves_for_cell(&self, state: &State, cell: &Cell) -> Vec<(State, Cost)> {
+        let pod = state.cells.get(cell).unwrap();
+        if cell.column != 'h' {
+            // In a home room
+            if pod.kind.to_ascii_lowercase() == cell.column {
+                // In our home room
+                if (cell.index..2).all(|index| {
+                    if let Some(occupant) = state.cells.get(&Cell { index, ..*cell }) {
+                        pod.kind == occupant.kind
+                    } else {
+                        false
+                    }
+                }) {
+                    // Every cell below us is home, so are we, no move needed
+                    return vec![];
+                }
+            }
 
-        // False, In hallway, want to go home
-        // Check if everything in our home column already is of our kind OR home column is free
-        // -- True, move to the lowest free home cell
-        // -- False, no move, we'd box someone in
-        vec![]
+            // We need to try moving into the hallway
+            return self
+                .moves
+                .iter()
+                .filter(|m| m.start == *cell)
+                .filter(|m| !m.blocked.iter().any(|cell| state.cells.contains_key(cell)))
+                .map(|m| {
+                    let mut state = state.clone();
+                    state.cells.remove(cell);
+                    state.cells.insert(m.end, pod.clone());
+                    (state, m.moves * pod.cost())
+                })
+                .collect();
+        } else {
+            // We're in the hallway.  We can go home if our homeroom is empty or has no strangers
+            let column = pod.kind.to_ascii_lowercase();
+            if !(0..2).all(|index| {
+                if let Some(occupant) = state.cells.get(&Cell { column, index }) {
+                    pod.kind == occupant.kind
+                } else {
+                    true
+                }
+            }) {
+                return vec![];
+            }
+
+            let lowest_spot = (0..2 as u8)
+                .rev()
+                .filter(|&index| !state.cells.contains_key(&Cell { column, index }))
+                .next()
+                .unwrap();
+
+            let home_cell = Cell {
+                column,
+                index: lowest_spot,
+            };
+
+            return self
+                .moves
+                .iter()
+                // inverse path
+                .filter(|m| m.start == home_cell && m.end == *cell)
+                // not blocked
+                .filter(|m| !m.blocked.iter().any(|cell| state.cells.contains_key(cell)))
+                .map(|m| {
+                    let mut state = state.clone();
+                    state.cells.remove(cell);
+                    state.cells.insert(m.start, pod.clone());
+                    (state, m.moves * pod.cost())
+                })
+                .collect();
+        }
     }
 }
 
+#[test]
+fn test_moves_for_cell() {
+    let game = Game::from("BACD ABCD");
+    assert_eq!(
+        game.state,
+        State::from("a0=B,a1=A,b0=A,b1=B,c0=C,c1=C,d0=D,d1=D")
+    );
+    let moves = game.moves_for_cell(&game.state, &Cell::from("a0"));
+    assert_eq!(moves.len(), 7);
+    assert_eq!(
+        moves,
+        vec![
+            (State::from("a1=A,b0=A,b1=B,c0=C,c1=C,d0=D,d1=D,h0=B"), 30),
+            (State::from("a1=A,b0=A,b1=B,c0=C,c1=C,d0=D,d1=D,h1=B"), 20),
+            (State::from("a1=A,b0=A,b1=B,c0=C,c1=C,d0=D,d1=D,h3=B"), 20),
+            (State::from("a1=A,b0=A,b1=B,c0=C,c1=C,d0=D,d1=D,h5=B"), 40),
+            (State::from("a1=A,b0=A,b1=B,c0=C,c1=C,d0=D,d1=D,h7=B"), 60),
+            (State::from("a1=A,b0=A,b1=B,c0=C,c1=C,d0=D,d1=D,h9=B"), 80),
+            (State::from("a1=A,b0=A,b1=B,c0=C,c1=C,d0=D,d1=D,h10=B"), 90),
+        ],
+        "Starting moves for a0"
+    );
+
+    let moves = game.moves_for_cell(
+        &State::from("a1=A,b0=A,b1=B,c0=C,c1=C,d0=D,d1=D,h0=B"),
+        &Cell::from("h0"),
+    );
+    assert_eq!(moves, vec![], "No legal move for h0");
+
+    let moves = game.moves_for_cell(
+        &State::from("a0=A,a1=A,b1=B,c0=C,c1=C,d0=D,d1=D,h0=B"),
+        &Cell::from("h0"),
+    );
+    assert_eq!(
+        moves,
+        vec![(State::from("a0=A,a1=A,b0=B,b1=B,c0=C,c1=C,d0=D,d1=D"), 50)],
+        "Winning move, h0 -> a0"
+    );
+}
+
 impl Game {
-    fn legal_moves(&self, _state: &State) -> Vec<(State, Cost)> {
-        vec![]
+    fn legal_moves(&self, state: &State) -> Vec<(State, Cost)> {
+        state
+            .cells
+            .keys()
+            .flat_map(|cell| self.moves_for_cell(state, cell))
+            .collect()
     }
 }
 
@@ -115,6 +218,10 @@ impl PartialOrd for Walk {
 
 // Dijkstra but using a HashMap rather than an array to track Game States
 #[aoc(day23, part1)]
+fn part1(game: &Game) -> Cost {
+    cheapest_path(game)
+}
+
 fn cheapest_path(game: &Game) -> Cost {
     let mut costs: HashMap<State, Cost> = HashMap::new();
     let mut queue = BinaryHeap::new();
@@ -130,8 +237,8 @@ fn cheapest_path(game: &Game) -> Cost {
             return cost;
         }
 
-        if cost > *costs.entry(state.to_owned()).or_insert(u32::MAX) {
-            // We've found a cheaper way to reach this state, skip
+        if cost > *costs.entry(state.to_owned()).or_insert(Cost::MAX) {
+            // We've found a cheaper way to reach this state, so we're not interested in the paths out
             continue;
         }
 
@@ -141,22 +248,26 @@ fn cheapest_path(game: &Game) -> Cost {
                 cost: cost + move_cost,
             };
 
-            // is this a cheaper way to a known state?
-            if next.cost < *costs.entry(next.state.to_owned()).or_insert(u32::MAX) {
+            // Is this currently the cheapest path to a known state?
+            if next.cost < *costs.entry(next.state.to_owned()).or_insert(Cost::MAX) {
+                // Yes, queue it up
                 costs.insert(next.state.to_owned(), next.cost);
                 queue.push(next);
             }
         }
     }
-    u32::MAX
+    Cost::MAX
 }
 
 #[test]
 fn test_cheapest_path() {
-    assert_eq!(cheapest_path(&Game::default()), 42);
+    assert_eq!(
+        cheapest_path(&generate(include_str!("day23_example.txt"))),
+        12521,
+    );
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Default)]
 struct Cell {
     column: char,
     index: u8,
@@ -189,7 +300,7 @@ impl PartialEq<&str> for Cell {
     }
 }
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 struct Move {
     start: Cell,
     end: Cell,
@@ -336,6 +447,17 @@ impl PartialEq<&str> for State {
     }
 }
 
+impl From<&str> for State {
+    fn from(input: &str) -> Self {
+        Self {
+            cells: HashMap::from_iter(input.split(',').map(|assignment| {
+                let (cell, pod) = assignment.split_once('=').unwrap();
+                (Cell::from(cell), Pod::from(pod))
+            })),
+        }
+    }
+}
+
 #[test]
 fn test_game_state() {
     assert_eq!(
@@ -344,7 +466,7 @@ fn test_game_state() {
     );
 }
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 struct Pod {
     kind: char,
 }
@@ -353,10 +475,26 @@ impl Pod {
     fn new(kind: char) -> Self {
         Self { kind }
     }
+
+    fn cost(&self) -> Cost {
+        match self.kind {
+            'A' => 1,
+            'B' => 10,
+            'C' => 100,
+            'D' => 1000,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl std::fmt::Display for Pod {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.kind)
+    }
+}
+
+impl From<&str> for Pod {
+    fn from(input: &str) -> Self {
+        Pod::new(input.chars().next().unwrap())
     }
 }
