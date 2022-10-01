@@ -1,9 +1,6 @@
 use itertools::Itertools;
 use pathfinding::prelude::dijkstra;
 
-#[cfg(test)]
-use pretty_assertions::assert_eq;
-
 type Cost = u32;
 
 #[derive(PartialEq, Eq, Clone, Default)]
