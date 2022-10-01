@@ -120,7 +120,8 @@ impl Game {
             }
 
             let lowest_spot = (0..self.rows as u8)
-                .rev().find(|&index| !state.occupied(&Cell { column, index }))
+                .rev()
+                .find(|&index| !state.occupied(&Cell { column, index }))
                 .unwrap();
 
             let home_cell = Cell {
@@ -192,7 +193,7 @@ impl Game {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Default)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 struct Cell {
     column: char,
     index: u8,
