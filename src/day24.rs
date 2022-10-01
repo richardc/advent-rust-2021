@@ -1,7 +1,11 @@
-type Register = char;
-type Value = i32;
+use std::collections::HashMap;
 
-#[derive(Clone, Copy)]
+use itertools::Itertools;
+
+type Register = char;
+type Value = i64;
+
+#[derive(Debug, Clone, Copy)]
 enum Argument {
     Register(char),
     Value(Value),
@@ -17,7 +21,7 @@ impl From<&str> for Argument {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 enum Instruction {
     Inp(Register),
     Add(Register, Argument),
@@ -49,6 +53,7 @@ impl From<&str> for Instruction {
     }
 }
 
+#[derive(Debug, Clone)]
 struct Alu {
     w: Value,
     x: Value,
@@ -58,13 +63,14 @@ struct Alu {
 }
 
 impl Alu {
-    fn new(instructions: Vec<Instruction>) -> Self {
+    fn new(instructions: &[Instruction]) -> Self {
         Alu {
             w: 0,
             x: 0,
             y: 0,
             z: 0,
-            instructions,
+
+            instructions: instructions.to_vec(),
         }
     }
 
@@ -98,13 +104,12 @@ impl Alu {
         self.z = 0;
     }
 
-    fn run(&mut self, input: Vec<Value>) -> bool {
+    fn run(&mut self, input: &[Value]) -> bool {
         let mut input = input.into_iter();
-        self.reset();
 
         for instruction in self.instructions.clone() {
             match instruction {
-                Instruction::Inp(dest) => self.store(dest, input.next().unwrap()),
+                Instruction::Inp(dest) => self.store(dest, *input.next().unwrap()),
                 Instruction::Add(dest, src) => {
                     self.store(dest, self.fetch(Argument::Register(dest)) + self.fetch(src))
                 }
@@ -142,42 +147,79 @@ impl Alu {
 
 #[test]
 fn test_alu_example1() {
-    let mut alu = generate("inp x\nmul x -1");
-    alu.run(vec![42]);
+    let mut alu = Alu::new(&generate("inp x\nmul x -1"));
+    alu.run(&[42]);
     assert_eq!(alu.x, -42);
 }
 
 #[test]
 fn test_alu_example2() {
-    let mut alu = generate("inp z\ninp x\nmul z 3\neql z x");
-    alu.run(vec![1, 3]);
+    let mut alu = Alu::new(&generate("inp z\ninp x\nmul z 3\neql z x"));
+    alu.run(&[1, 3]);
     assert_eq!(alu.x, 3);
     assert_eq!(alu.z, 1);
 
-    alu.run(vec![3, 3]);
+    alu.run(&[3, 3]);
     assert_eq!(alu.x, 3);
     assert_eq!(alu.z, 0);
 }
 
 #[test]
 fn test_alu_example3() {
-    let mut alu = generate(include_str!("day24_example3.txt"));
-    assert!(alu.run(vec![0b0000]));
+    let mut alu = Alu::new(&generate(include_str!("day24_example3.txt")));
+    assert!(alu.run(&[0b0000]));
     assert_eq!([alu.w, alu.x, alu.y, alu.z], [0, 0, 0, 0]);
 
-    assert!(alu.run(vec![0b0001]));
+    alu.reset();
+    assert!(alu.run(&[0b0001]));
     assert_eq!([alu.w, alu.x, alu.y, alu.z], [0, 0, 0, 1]);
 
-    assert!(alu.run(vec![0b1001]));
+    alu.reset();
+    assert!(alu.run(&[0b1001]));
     assert_eq!([alu.w, alu.x, alu.y, alu.z], [1, 0, 0, 1]);
 }
 
+fn find_model_number(program: &[Instruction], keep: fn(Value, Value) -> bool) -> Value {
+    let programs = program.split(|i| matches!(i, Instruction::Inp(_))).skip(1);
+
+    let mut digits: HashMap<Value, Value> = HashMap::new();
+    digits.insert(0, 0);
+    let mut p = 0;
+    for program in programs {
+        let mut new_digits: HashMap<Value, Value> = HashMap::new();
+        let mut alu = Alu::new(program);
+        for candidate in 1..=9 {
+            for (z, max) in &digits {
+                alu.reset();
+                // All the subprograms start: inp w
+                alu.z = *z;
+                alu.w = candidate;
+                alu.run(&[]);
+
+                let val = max * 10 + candidate;
+                if keep(*new_digits.get(&alu.z).unwrap_or(&0), val) {
+                    new_digits.insert(alu.z, val);
+                }
+            }
+        }
+        digits = new_digits;
+        // println!("{} digits checked, {} entries", p, digits.len());
+        p = p + 1;
+    }
+
+    digits[&0]
+}
 #[aoc_generator(day24)]
-fn generate(input: &str) -> Alu {
-    Alu::new(input.lines().map(Instruction::from).collect())
+fn generate(input: &str) -> Vec<Instruction> {
+    input.lines().map(Instruction::from).collect()
 }
 
 #[aoc(day24, part1)]
-fn largest_model_number(input: &Alu) -> usize {
-    0
+fn largest_model_number(program: &[Instruction]) -> Value {
+    find_model_number(program, |old, new| old < new)
+}
+
+#[aoc(day24, part2)]
+fn smallest_model_number(program: &[Instruction]) -> Value {
+    find_model_number(program, |old, new| old > new || old == 0)
 }
