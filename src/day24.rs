@@ -1,23 +1,183 @@
+type Register = char;
+type Value = i32;
+
+#[derive(Clone, Copy)]
 enum Argument {
     Register(char),
-    Value(i32),
+    Value(Value),
 }
 
+impl From<&str> for Argument {
+    fn from(input: &str) -> Self {
+        if "wxyz".contains(input) {
+            Argument::Register(input.chars().next().unwrap())
+        } else {
+            Argument::Value(input.parse().unwrap())
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
 enum Instruction {
-    Inp(Argument),
-    Add(Argument, Argument),
-    Mul(Argument, Argument),
-    Div(Argument, Argument),
-    Mod(Argument, Argument),
-    Eql(Argument, Argument),
+    Inp(Register),
+    Add(Register, Argument),
+    Mul(Register, Argument),
+    Div(Register, Argument),
+    Mod(Register, Argument),
+    Eql(Register, Argument),
+}
+
+impl From<&str> for Instruction {
+    fn from(input: &str) -> Self {
+        let mut parts = input.split_ascii_whitespace();
+        let keyword = parts.next().unwrap();
+        let dest = parts.next().unwrap().chars().next().unwrap();
+        match keyword {
+            "inp" => Instruction::Inp(dest),
+            _ => {
+                let src = Argument::from(parts.next().unwrap());
+                match keyword {
+                    "add" => Instruction::Add(dest, src),
+                    "mul" => Instruction::Mul(dest, src),
+                    "div" => Instruction::Div(dest, src),
+                    "mod" => Instruction::Mod(dest, src),
+                    "eql" => Instruction::Eql(dest, src),
+                    _ => unreachable!(),
+                }
+            }
+        }
+    }
+}
+
+struct Alu {
+    w: Value,
+    x: Value,
+    y: Value,
+    z: Value,
+    instructions: Vec<Instruction>,
+}
+
+impl Alu {
+    fn new(instructions: Vec<Instruction>) -> Self {
+        Alu {
+            w: 0,
+            x: 0,
+            y: 0,
+            z: 0,
+            instructions,
+        }
+    }
+
+    fn fetch(&self, src: Argument) -> Value {
+        match src {
+            Argument::Value(v) => v,
+            Argument::Register(r) => match r {
+                'w' => self.w,
+                'x' => self.x,
+                'y' => self.y,
+                'z' => self.z,
+                _ => unreachable!(),
+            },
+        }
+    }
+
+    fn store(&mut self, dest: Register, value: Value) {
+        match dest {
+            'w' => self.w = value,
+            'x' => self.x = value,
+            'y' => self.y = value,
+            'z' => self.z = value,
+            _ => unreachable!(),
+        }
+    }
+
+    fn reset(&mut self) {
+        self.w = 0;
+        self.x = 0;
+        self.y = 0;
+        self.z = 0;
+    }
+
+    fn run(&mut self, input: Vec<Value>) -> bool {
+        let mut input = input.into_iter();
+        self.reset();
+
+        for instruction in self.instructions.clone() {
+            match instruction {
+                Instruction::Inp(dest) => self.store(dest, input.next().unwrap()),
+                Instruction::Add(dest, src) => {
+                    self.store(dest, self.fetch(Argument::Register(dest)) + self.fetch(src))
+                }
+                Instruction::Mul(dest, src) => {
+                    self.store(dest, self.fetch(Argument::Register(dest)) * self.fetch(src))
+                }
+                Instruction::Div(dest, src) => {
+                    let denominator = self.fetch(src);
+                    if denominator == 0 {
+                        return false;
+                    }
+                    self.store(dest, self.fetch(Argument::Register(dest)) / denominator)
+                }
+                Instruction::Mod(dest, src) => {
+                    let numerator = self.fetch(Argument::Register(dest));
+                    let denominator = self.fetch(src);
+                    if numerator < 0 || denominator <= 0 {
+                        return false;
+                    }
+                    self.store(dest, numerator % denominator)
+                }
+                Instruction::Eql(dest, src) => self.store(
+                    dest,
+                    if self.fetch(Argument::Register(dest)) == self.fetch(src) {
+                        1
+                    } else {
+                        0
+                    },
+                ),
+            };
+        }
+        true
+    }
+}
+
+#[test]
+fn test_alu_example1() {
+    let mut alu = generate("inp x\nmul x -1");
+    alu.run(vec![42]);
+    assert_eq!(alu.x, -42);
+}
+
+#[test]
+fn test_alu_example2() {
+    let mut alu = generate("inp z\ninp x\nmul z 3\neql z x");
+    alu.run(vec![1, 3]);
+    assert_eq!(alu.x, 3);
+    assert_eq!(alu.z, 1);
+
+    alu.run(vec![3, 3]);
+    assert_eq!(alu.x, 3);
+    assert_eq!(alu.z, 0);
+}
+
+#[test]
+fn test_alu_example3() {
+    let mut alu = generate(include_str!("day24_example3.txt"));
+    assert!(alu.run(vec![0b0000]));
+    assert_eq!([alu.w, alu.x, alu.y, alu.z], [0, 0, 0, 0]);
+
+    assert!(alu.run(vec![0b0001]));
+    assert_eq!([alu.w, alu.x, alu.y, alu.z], [0, 0, 0, 1]);
+
+    assert!(alu.run(vec![0b1001]));
+    assert_eq!([alu.w, alu.x, alu.y, alu.z], [1, 0, 0, 1]);
 }
 
 #[aoc_generator(day24)]
-fn generate(input: &str) -> Vec<Instruction> {
-    vec![]
+fn generate(input: &str) -> Alu {
+    Alu::new(input.lines().map(Instruction::from).collect())
 }
 
 #[aoc(day24, part1)]
-fn largest_model_number(input: &[Instruction]) -> usize {
+fn largest_model_number(input: &Alu) -> usize {
     0
 }
