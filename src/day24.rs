@@ -103,7 +103,7 @@ impl Alu {
     }
 
     fn run(&mut self, input: &[Value]) -> bool {
-        let mut input = input.into_iter();
+        let mut input = input.iter();
 
         for instruction in self.instructions.clone() {
             match instruction {
@@ -182,8 +182,8 @@ fn find_model_number(program: &[Instruction], keep: fn(Value, Value) -> bool) ->
 
     let mut digits: HashMap<Value, Value> = HashMap::new();
     digits.insert(0, 0);
-    let mut p = 0;
-    for program in programs {
+
+    for (_p, program) in programs.enumerate() {
         let mut new_digits: HashMap<Value, Value> = HashMap::new();
         let mut alu = Alu::new(program);
         for candidate in 1..=9 {
@@ -201,8 +201,7 @@ fn find_model_number(program: &[Instruction], keep: fn(Value, Value) -> bool) ->
             }
         }
         digits = new_digits;
-        // println!("{} digits checked, {} entries", p, digits.len());
-        p = p + 1;
+        // println!("{} digits checked, {} entries", _p, digits.len());
     }
 
     digits[&0]
