@@ -36,19 +36,19 @@ type Number = u64;
 #[derive(Debug, PartialEq, Clone)]
 enum Value {
     Literal(Number),
-    Operation { kind: u32, on: Vec<Packet> },
+    Operation { kind: Number, on: Vec<Packet> },
 }
 
 #[derive(Debug, PartialEq, Clone)]
 struct Packet {
-    version: u32,
+    version: Number,
     value: Value,
 }
 
-fn decode_binary(bits: &[u8]) -> u32 {
+fn decode_binary(bits: &[u8]) -> Number {
     let mut value = 0;
     for b in bits {
-        value = (value << 1) + (b - b'0') as u32
+        value = (value << 1) + (b - b'0') as Number
     }
     value
 }
@@ -73,10 +73,10 @@ fn decode_literal(bits: &[u8]) -> (&[u8], Value) {
             break;
         }
     }
-    (&bits[used..], Value::Literal(value.into()))
+    (&bits[used..], Value::Literal(value))
 }
 
-fn decode_operation(kind: u32, bits: &[u8]) -> (&[u8], Value) {
+fn decode_operation(kind: Number, bits: &[u8]) -> (&[u8], Value) {
     // length type id
     if bits[0] == b'0' {
         // next 15 bits are a length, parse up to length worth of subpackets
@@ -196,15 +196,15 @@ fn test_decode_packet_operator() {
     );
 }
 
-fn walk_versions(p: &Packet) -> u32 {
+fn walk_versions(p: &Packet) -> Number {
     match &p.value {
         Value::Literal(_) => p.version,
-        Value::Operation { on, .. } => p.version + on.iter().map(walk_versions).sum::<u32>(),
+        Value::Operation { on, .. } => p.version + on.iter().map(walk_versions).sum::<Number>(),
     }
 }
 
 #[aoc(day16, part1)]
-fn sum_versions(s: &str) -> u32 {
+fn sum_versions(s: &str) -> Number {
     let (_, packet) = decode(&hex_to_bits(s));
     walk_versions(&packet)
 }
