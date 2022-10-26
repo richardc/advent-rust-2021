@@ -19,10 +19,8 @@ fn step_down(state: &Cucumbers) -> Cucumbers {
     let (_, max_y) = state.dim();
     let mut moves = vec![];
     for ((x, y), c) in state.indexed_iter() {
-        if *c == b'v' {
-            if state[[x, (y + 1) % max_y]] == b'.' {
-                moves.push(((x, y), (x, (y + 1) % max_y)));
-            }
+        if *c == b'v' && state[[x, (y + 1) % max_y]] == b'.' {
+            moves.push(((x, y), (x, (y + 1) % max_y)));
         }
     }
 
@@ -39,10 +37,8 @@ fn step_right(state: &Cucumbers) -> Cucumbers {
     let (max_x, _) = state.dim();
     let mut moves = vec![];
     for ((x, y), c) in state.indexed_iter() {
-        if *c == b'>' {
-            if state[[(x + 1) % max_x, y]] == b'.' {
-                moves.push(((x, y), ((x + 1) % max_x, y)));
-            }
+        if *c == b'>' && state[[(x + 1) % max_x, y]] == b'.' {
+            moves.push(((x, y), ((x + 1) % max_x, y)));
         }
     }
 
